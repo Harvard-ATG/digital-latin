@@ -529,7 +529,6 @@ if chat_enabled:
             import session_db_postgres as session_db
             session_db.log_message(session_db_id, "user", user_text)
         st.session_state.should_call_llm = True
-        st.session_state["chat_input_text"] = ""  # Clear after send
         st.rerun()
     # Optionally, you can add a note for the user
     st.caption("Press the ➤ button to send your message.")

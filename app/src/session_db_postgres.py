@@ -40,8 +40,8 @@ def ensure_sessions_table():
             END IF;
         END$$;
     """)
+    conn.commit()  # Ensure sessions table is committed before creating messages table
     ensure_messages_table()
-    conn.commit()
     conn.close()
 
 def ensure_messages_table():
