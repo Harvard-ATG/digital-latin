@@ -1,14 +1,36 @@
-# This is a variant of app.py using Streamlit's st.chat_message() API for chat rendering.
-import os
-import json
-import asyncio
-import datetime
-import html  # <--- Make sure this is at the top
-import streamlit as st
-from pathlib import Path
-from gemini_pipeline import GeminiPipeline as Pipe
-from datetime import datetime
-from jinja2 import Template
+print("[DEBUG] Script starting (very top)")
+try:
+    from pathlib import Path
+    print("[DEBUG] Imported Path")
+    import os
+    print("[DEBUG] Imported os")
+    import json
+    print("[DEBUG] Imported json")
+    import asyncio
+    print("[DEBUG] Imported asyncio")
+    import datetime
+    print("[DEBUG] Imported datetime")
+    import html
+    print("[DEBUG] Imported html")
+    import streamlit as st
+    print("[DEBUG] Imported streamlit")
+    from gemini_pipeline import GeminiPipeline as Pipe
+    print("[DEBUG] Imported GeminiPipeline")
+    from datetime import datetime
+    print("[DEBUG] Imported datetime from datetime")
+    from jinja2 import Template
+    print("[DEBUG] Imported Template from jinja2")
+except Exception as e:
+    print(f"[DEBUG] Exception during imports: {e}")
+
+try:
+    import session_db_postgres as session_db
+    print("[DEBUG] Imported session_db_postgres")
+    os.environ["SESSION_DB_BACKEND"] = "postgres"
+    session_db.ensure_sessions_table()
+    print("[DEBUG] Called ensure_sessions_table")
+except Exception as e:
+    print(f"[DEBUG] Exception during DB setup: {e}")
 
 ## TODO: 
 # - Git repo a repo in harvard atg.
@@ -41,7 +63,15 @@ if env_file.exists():
 
 # Initialize the Gemini pipeline wrapper
 # WHY: Encapsulates LLM API logic and allows for easy swapping or extension of model backends.
-pipe = Pipe(input_data={})
+try:
+    print("[DEBUG] Initializing GeminiPipeline...")
+    pipe = Pipe(input_data={})
+    print("[DEBUG] GeminiPipeline initialized successfully.")
+except Exception as e:
+    print(f"[DEBUG] Exception during GeminiPipeline initialization: {e}")
+    import traceback
+    traceback.print_exc()
+    pipe = None
 
 # Set up prompt template paths
 # WHY: Prompts are stored as Jinja2 templates for easy editing and reuse. This allows for level-specific instructions.
@@ -76,30 +106,31 @@ def human_readable_time(ts):
 
 # Initialize should_call_llm if it doesn't exist
 if "should_call_llm" not in st.session_state:
+    print("[DEBUG] if 'should_call_llm' not in st.session_state")
     st.session_state.should_call_llm = False
 
 # Process any pending session load data
-if "_pending_session_load_data" in st.session_state:
-    print("DEBUG: Processing _pending_session_load_data at script start.")
-    session_data_to_load = st.session_state.pop("_pending_session_load_data") # Get and remove the data
-    session_id_to_load = st.session_state.pop("_pending_session_load_id") # Get the session ID
+# if "_pending_session_load_data" in st.session_state:
+#     print("DEBUG: Processing _pending_session_load_data at script start.")
+#     session_data_to_load = st.session_state.pop("_pending_session_load_data") # Get and remove the data
+#     session_id_to_load = st.session_state.pop("_pending_session_load_id") # Get the session ID
 
-    # Clear relevant parts of session_state *before* applying loaded data
-    # Be careful not to clear internal streamlit keys or keys from widgets not yet rendered
-    keys_to_clear_before_load = ["chat_messages", "session_title", "system_prompt"]
-    for k in keys_to_clear_before_load:
-        if k in st.session_state:
-            del st.session_state[k]
+#     # Clear relevant parts of session_state *before* applying loaded data
+#     # Be careful not to clear internal streamlit keys or keys from widgets not yet rendered
+#     keys_to_clear_before_load = ["chat_messages", "session_title", "system_prompt"]
+#     for k in keys_to_clear_before_load:
+#         if k in st.session_state:
+#             del st.session_state[k]
 
-    # Apply all loaded data to st.session_state
-    for k, v in session_data_to_load.items():
-        st.session_state[k] = v
+#     # Apply all loaded data to st.session_state
+#     for k, v in session_data_to_load.items():
+#         st.session_state[k] = v
 
-    # Ensure should_call_llm is false after a load
-    st.session_state.should_call_llm = False
-    st.session_state["session_db_id"] = session_id_to_load
-    st.session_state["_rerun_from_load"] = True # Keep this flag for final rerun check
-    print(f"DEBUG: Loaded session data applied. New session_db_id: {st.session_state['session_db_id']}")
+#     # Ensure should_call_llm is false after a load
+#     st.session_state.should_call_llm = False
+#     st.session_state["session_db_id"] = session_id_to_load
+#     st.session_state["_rerun_from_load"] = True # Keep this flag for final rerun check
+#     print(f"DEBUG: Loaded session data applied. New session_db_id: {st.session_state['session_db_id']}")
     # No st.rerun() here, as the script will naturally continue and widgets will use these new values.
 
 
@@ -129,6 +160,7 @@ session_db.ensure_sessions_table()
 # --- SIDEBAR ---
 # WHY: The sidebar provides navigation, settings, and session management. It is the main entry point for users to select models, levels, and manage their work.
 with st.sidebar:
+    print("[DEBUG] Entered sidebar block")
     # --- New Session Button at the Top of the Sidebar ---
     new_session_sidebar = st.button(
         "New Session",
@@ -136,9 +168,15 @@ with st.sidebar:
         use_container_width=True,
         help="Start a new session. This will clear the chat and reset the level."
     )
-    if new_session_sidebar:
-        st.session_state.clear()
-        st.rerun()
+    # if new_session_sidebar:
+    #     print("[DEBUG] New Session button clicked")
+    #     # If a session is active, record end_reason before clearing
+    #     session_db_id = st.session_state.get("session_db_id")
+    #     session_title = st.session_state.get("session_title", "Untitled Session")
+    #     if session_db_id:
+    #         session_db.save_session(session_title, dict(st.session_state), session_db_id=session_db_id, end_reason="new session started")
+    #     st.session_state.clear()
+    #     st.rerun()
     # Style the sidebar New Session button to be dark grey with white text
     st.markdown("""
         <style>
@@ -169,8 +207,10 @@ with st.sidebar:
 
     # WHY: Ensure model and level are always initialized, even after session clears or loads.
     if "selected_model_chatapi" not in st.session_state or st.session_state.selected_model_chatapi not in allowed_models:
+        print("[DEBUG] if 'selected_model_chatapi' not in st.session_state or not in allowed_models")
         st.session_state.selected_model_chatapi = allowed_models[0] if allowed_models else "gemini-2.5-pro"
     if "level_chatapi" not in st.session_state:
+        print("[DEBUG] if 'level_chatapi' not in st.session_state")
         st.session_state.level_chatapi = "Select a level"
 
     # WHY: These selectboxes are bound to session_state so that loading a session or changing a setting updates the UI and logic everywhere.
@@ -188,15 +228,21 @@ with st.sidebar:
         disabled=level_disabled
     )
     # Only allow selection if not disabled and a real level is chosen
-    if not level_selected and level in ["Level I", "Level II"]:
-        st.session_state["level_selected"] = True
-        st.rerun()
+    # if not level_selected and level in ["Level I", "Level II"]:
+    #     print("[DEBUG] if not level_selected and level in ['Level I', 'Level II']")
+    #     st.session_state["level_selected"] = True
+    #     # Save a new session immediately when level is selected
+    #     session_title = st.session_state.get("session_title", "Untitled Session")
+    #     session_db_id = session_db.save_session(session_title, dict(st.session_state))
+    #     st.session_state["session_db_id"] = session_db_id
+    #     st.rerun()
 
     # Show caption if a real level is selected and selector is disabled
     if (
         st.session_state.get("level_selected", False)
         and st.session_state.get("level_chatapi") in ["Level I", "Level II"]
     ):
+        print("[DEBUG] if level_selected and level_chatapi in ['Level I', 'Level II']")
         st.caption("To reset or select another level, start a new session.")
 
     # WHY: System prompt is dynamically set based on the selected level, using Jinja2 templates for flexibility.
@@ -207,8 +253,7 @@ with st.sidebar:
     else:
         st.session_state["system_prompt"] = render_jinja_prompt(LEVEL_2_PROMPT_JINJA, context)
 
-    print(f"DEBUG: System prompt (after level selection in sidebar): {st.session_state.get('system_prompt', '')[:50]}...")
-
+    print(f"[DEBUG] System prompt set: {st.session_state.get('system_prompt', '')[:50]}")
     # --- BEGIN: Standard (non-DB) session sidebar code (TEMPORARILY DISABLED) ---
     # st.markdown("---")
     # st.subheader("Past Sessions (File)")
@@ -246,11 +291,13 @@ with st.sidebar:
         and st.session_state.get("chat_messages")
         and not st.session_state.get("_rerun_from_load", False) # Check this flag
     )
-    if show_save_button:
-        save_clicked = st.button('Save Current Session (Chat API)')
-        if save_clicked:
-            session_db.save_session(session_title)
-            st.success('Session saved!')
+    # if show_save_button:
+    #     print("[DEBUG] if show_save_button")
+    #     save_clicked = st.button('Save Current Session (Chat API)')
+    #     if save_clicked:
+    #         print("[DEBUG] if save_clicked")
+    #         session_db.save_session(session_title)
+    #         st.success('Session saved!')
     st.markdown("---")
     st.caption("Powered by Gemini")
     # WHY: Model selection is now defaulted to gemini-2.5-pro and removed from the UI.
@@ -292,6 +339,7 @@ with st.sidebar:
 
 st.header(":speech_balloon: pAIdagogue Chat")
 if "chat_messages" not in st.session_state:
+    print("[DEBUG] if 'chat_messages' not in st.session_state")
     st.session_state["chat_messages"] = []
 
 # WHY: Inject custom CSS for improved UI/UX, including font and chat input styling.
@@ -418,10 +466,12 @@ level = st.session_state.get("level_chatapi", "Select a level")
 chat_enabled = level in ["Level I", "Level II"]
 
 if not chat_enabled:
+    print("[DEBUG] if not chat_enabled")
     st.warning("Select a level (Level I or Level II) in the **left sidebar** to enter a message.")
 
 # --- Use a text area for chat input instead of st.chat_input ---
 if "chat_input_text" not in st.session_state:
+    print("[DEBUG] if 'chat_input_text' not in st.session_state")
     st.session_state["chat_input_text"] = ""
 
 # Commented out original chat_input for reference
@@ -433,6 +483,7 @@ if "chat_input_text" not in st.session_state:
 
 # Use a text area and a send button
 if chat_enabled:
+    print("[DEBUG] if chat_enabled")
     # Inject CSS to increase font size in the text area
     st.markdown("""
     <style>
@@ -463,8 +514,20 @@ if chat_enabled:
         )
     # Send on button click or if Enter is pressed and only one line (simulate send on enter)
     if send_clicked and user_text.strip():
-        print(f"DEBUG: User entered prompt: '{user_text}'")
+        print("[DEBUG] if send_clicked and user_text.strip()")
         st.session_state["chat_messages"].append({"role": "user", "content": user_text})
+        # --- Save session immediately after first user message ---
+        if (
+            len([m for m in st.session_state["chat_messages"] if m["role"] == "user"]) == 1
+            and not st.session_state.get("_rerun_from_load", False)
+        ):
+            session_title = st.session_state.get("session_title", "Untitled Session")
+            session_db.save_session(session_title)
+        # --- Log user message with timestamp and time delta ---
+        session_db_id = st.session_state.get("session_db_id")
+        if session_db_id:
+            import session_db_postgres as session_db
+            session_db.log_message(session_db_id, "user", user_text)
         st.session_state.should_call_llm = True
         st.session_state["chat_input_text"] = ""  # Clear after send
         st.rerun()
@@ -474,7 +537,7 @@ if chat_enabled:
 # This is the LLM call trigger block
 # WHY: When should_call_llm is True, call the LLM with the current chat history and system prompt, append the response, and rerun to update the UI.
 if st.session_state.should_call_llm:
-    print(f"DEBUG: Entering LLM call block. should_call_llm was TRUE. Chat messages before call: {len(st.session_state['chat_messages'])}")
+    print("[DEBUG] if st.session_state.should_call_llm")
     st.session_state.should_call_llm = False
 
     system_prompt = st.session_state.get("system_prompt", "")
@@ -483,19 +546,22 @@ if st.session_state.should_call_llm:
     ]
     print(f"[Streamlit] Messages sent to LLM (first/last): {messages[0]['content'][:30]}..., {messages[-1]['content'][:30]}...")
     try:
+        print("[DEBUG] try block before LLM call")
         response_content = asyncio.run(pipe.pipe({"model": selected_model, "messages": messages}, {}, lambda x: None, {}))
-
-        print(f"DEBUG: Raw LLM content (the 'response_content' variable): ###\n{response_content}\n###")
-        print(f"[Streamlit] LLM response received. Appending to chat_messages.")
-
+        print("[DEBUG] after LLM call")
         # Only append if not already the last assistant message (prevents duplicates)
         if not (
             st.session_state["chat_messages"]
             and st.session_state["chat_messages"][-1]["role"] == "assistant"
             and st.session_state["chat_messages"][-1]["content"].strip() == response_content.strip()
         ):
+            print("[DEBUG] if not duplicate assistant message")
             st.session_state["chat_messages"].append({"role": "assistant", "content": response_content})
-
+            # --- Log assistant message with timestamp and time delta ---
+            session_db_id = st.session_state.get("session_db_id")
+            if session_db_id:
+                import session_db_postgres as session_db
+                session_db.log_message(session_db_id, "assistant", response_content)
         # Session title generation:
         # Only generate title if there isn't one already AND it's the *first* user message
         # AND we are NOT in the midst of a rerun specifically from loading a session
@@ -504,7 +570,7 @@ if st.session_state.should_call_llm:
             and len([m for m in st.session_state["chat_messages"] if m["role"] == "user"]) == 1
             and not st.session_state.get("_rerun_from_load", False)
         ):
-            print(f"DEBUG: Generating new session title.")
+            print("[DEBUG] if generating new session title")
             summary_prompt = "Summarize the following topic in 3-5 words for a session title: " + st.session_state["chat_messages"][-1]["content"]
             summary_messages = [
                 {"role": "system", "content": "You are a helpful assistant."},
@@ -518,14 +584,14 @@ if st.session_state.should_call_llm:
 
         st.rerun() # Rerun to display the new assistant message
     except Exception as e:
-        print(f"[Streamlit] Error during LLM response: {e}")
+        print(f"[DEBUG] Exception in LLM call: {e}")
         # Improved error message to still show context
         # Now 'response_content' is definitely a string in this specific error handler
         error_info = f"Error: {e}\nRaw object type: {type(e.__context__ if e.__context__ else 'Unknown')}\nRaw object details: {response_content if 'response_content' in locals() else 'Not available'}"
         st.session_state["chat_messages"].append({"role": "assistant", "content": error_info})
         st.rerun()
 else:
-    print(f"DEBUG: Skipping LLM call block. should_call_llm was FALSE.")
+    print("[DEBUG] else: should_call_llm is False")
 
 
 # --- Final Rerun Handling for Session Loading (after all other logic) ---
@@ -533,7 +599,7 @@ else:
 # This ensures a final clean rerun after _pending_session_load_data has been processed
 # This flag is set by the initial "_pending_session_load_data" block now.
 if st.session_state.get("_rerun_from_load", False):
-    print(f"DEBUG: Clearing _rerun_from_load flag for final clean up rerun.")
+    print("[DEBUG] if _rerun_from_load")
     del st.session_state["_rerun_from_load"]
     # No st.rerun() here, as this means we're done with the load sequence.
     # The next action will be user input or Streamlit's idle rerun.

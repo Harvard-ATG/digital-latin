@@ -1,10 +1,9 @@
 import os
 import json
 import asyncio
-# import datetime
 import streamlit as st
 import markdown2
-import sentry_sdk
+# import sentry_sdk
 from pathlib import Path
 from gemini_pipeline import GeminiPipeline as Pipe
 from jinja2 import Template
@@ -56,7 +55,10 @@ with st.sidebar:
     # WHY: Model selection is now defaulted to gemini-2.5-pro and removed from the UI.
     selected_model = "gemini-2.5-pro"
     st.session_state["selected_model_chatapi"] = selected_model
+    print("[DEBUG] Before level selectbox, st.session_state['level_chatapi']:", st.session_state.get("level_chatapi"))
     level = st.selectbox("Select Level", ["Level I", "Level II"], key="level_chatapi")
+    print("[DEBUG] After level selectbox, selected level:", level)
+    print("[DEBUG] After level selectbox, st.session_state['level_chatapi']:", st.session_state.get("level_chatapi"))
     context = {}  # Add any dynamic context if needed
 
     # --- DB BACKEND SELECTION ---
