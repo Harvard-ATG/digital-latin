@@ -16,6 +16,7 @@ until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER"; do
 done
 
 echo "[DEBUG] PostgreSQL is ready"
+sleep 3  # Give Postgres extra time to be fully ready
 # Preload dummy data (only if table is empty)
 echo "Preloading dummy data if needed..."
 python src/load_dummy_sessions.py
