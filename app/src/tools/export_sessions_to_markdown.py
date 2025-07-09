@@ -1,8 +1,10 @@
 import os
 import psycopg2
 from pathlib import Path
-import argparse
 import json
+import logging
+
+logging.getLogger(__name__)
 
 # Local Development Settings: Ensure the environment variables are set for PostgreSQL connection
 def get_conn():
@@ -68,20 +70,22 @@ def export_sessions_to_markdown(output_dir="../data/session_exports_md", start=N
         out_path = Path(output_dir) / f"{safe_name}.md"
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(md_content)
-        print(f"Exported session {session_id} to {out_path}")
+        logging.info(f"Exported session {session_id} to {out_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Export sessions to Markdown files.")
-    parser.add_argument('--start', type=int, default=None, help='Start index (0-based) of sessions to export')
-    parser.add_argument('--end', type=int, default=None, help='End index (exclusive) of sessions to export')
-    parser.add_argument('--output_dir', type=str, default="../data/session_exports_md", help='Output directory for markdown files')
+    import argparse
+    parser = argparse.ArgumentParser(description="Export sessions to Markdown.")
+    parser.add_argument("--db", default="../data/sessions.db", help="Path to SQLite DB file")
+    parser.add_argument("--out", default="../data/sessions_export.md", help="Output Markdown file")
     args = parser.parse_args()
 
+    logging.basicConfig(level=logging.INFO)
+    logging.info(f"Exporting sessions from {args.db} to {args.out}")
     # Interactive prompt if start/end not provided
     if args.start is None or args.end is None:
         sessions = list_sessions()
         total = len(sessions)
-        print(f"There are {total} sessions available (0 to {total-1}).")
+        logging.info(f"There are {total} sessions available (0 to {total-1}).")
         if args.start is None:
             start = input(f"Enter start index [0]: ")
             args.start = int(start) if start.strip() else 0

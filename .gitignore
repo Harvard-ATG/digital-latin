@@ -4,3 +4,4 @@ venv/
 __pycache__/
 .notes*
 streamlit-ui.code-workspace
+.DS_Store

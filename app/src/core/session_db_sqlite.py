@@ -2,6 +2,9 @@ import sqlite3
 import json
 from pathlib import Path
 from datetime import datetime
+import logging
+
+logging.getLogger(__name__)
 
 data_dir = Path(__file__).parent.parent / "data"
 db_path = data_dir / "sessions.db"

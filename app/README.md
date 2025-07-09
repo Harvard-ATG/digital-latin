@@ -12,6 +12,15 @@ This project provides a Streamlit-based frontend for interacting with the Gemini
 - Python 3.12 or later
 - `pip` installed
 
+### Environment Variables
+
+Follow the .env.example file for the following environment variables, which should be set in your `.env` file:
+
+**Note:**  
+- Files written by the application (such as debug JSON files) are stored in the container or server's local filesystem.  
+- These files are **not** written back to the source repository.  
+- To access these files in production (e.g., on AWS), you must exec into the running container or mount a persistent volume.
+
 ## Setup Instructions
 
 ### 1. Clone the Repository
@@ -36,15 +45,13 @@ pip install -r requirements.txt
 ### 4. Run the Application
 Start the Streamlit application:
 ```bash
-streamlit run streamlit_ui_main.py
-# or
 streamlit run streamlit_ui_chatapi.py --server.port 8502
 ```
 
 ### 5. Access the UI
 Open your browser and navigate to:
 ```
-http://localhost:8501
+http://localhost:8502
 ```
 
 ## Docker & Docker Compose
@@ -55,7 +62,6 @@ You can run both apps using Docker Compose. This will start both services, each 
 docker-compose up --build
 ```
 
-- Main app: http://localhost:8501
 - Chat API app: http://localhost:8502
 
 ## Exposing Your App with ngrok
@@ -71,7 +77,6 @@ To share your local Streamlit app with others, use [ngrok](https://ngrok.com/doc
 3. **Expose your app**
    - In a new terminal, run:
      ```sh
-     ngrok http 8501
      ngrok http 8502
      ```
    - ngrok will display a public forwarding URL (e.g., `https://xxxx.ngrok-free.app`). Share this link to give others access.
@@ -79,7 +84,6 @@ To share your local Streamlit app with others, use [ngrok](https://ngrok.com/doc
 For more details, see the [ngrok documentation](https://ngrok.com/docs).
 
 ## File Structure
-- `streamlit_ui_main.py`: The main Streamlit application.
 - `streamlit_ui_chatapi.py`: The Streamlit chat API application.
 - `gemini_pipeline.py`: The Gemini pipeline integration.
 - `requirements.txt`: List of dependencies.
@@ -133,30 +137,111 @@ This project is licensed under the Apache License 2.0.
 
 The `entrypoint.sh` script is automatically made executable during the Docker build process (see the Dockerfile). You do **not** need to run `chmod +x entrypoint.sh` manually. This ensures the script always runs correctly for all contributors and CI/CD environments.
 
-## Example: Inspecting Your PostgreSQL Database from the Container
+## Inspecting Your PostgreSQL Database in Docker
 
-To view your tables and data directly from the running PostgreSQL container:
+You can use either `docker-compose exec` or `docker exec` to access your running PostgreSQL container.  
+**Choose the method that matches how you started your containers:**
+
+---
+
+### Option 1: Using `docker-compose exec` (recommended if you used Docker Compose)
 
 1. **Open a shell in the postgres container:**
    ```sh
    docker-compose exec postgres bash
    ```
+   - `exec`: Run a command in a running container.
+   - `postgres`: The service name as defined in your `docker-compose.yml`.
+   - `bash`: Start a bash shell.
+
 2. **Connect to PostgreSQL using psql:**
    ```sh
-   psql -U $POSTGRES_USER -d $POSTGRES_DB
-   # For your setup, typically:
-   psql -U postgres -d sessions
+   psql -U <username> -d <database>
    ```
-3. **List tables:**
-   ```sql
-   \dt
+   - `-U <username>`: Connect as the specified database user (e.g., `postgres`)
+   - `-d <database>`: Connect to the specified database (e.g., `sessions`)
+   - Example:  
+     ```sh
+     psql -U postgres -d sessions
+     ```
+   - You may be prompted for the password for the user you specify.
+
+---
+
+### Option 2: Using `docker exec` (if you started the container directly)
+
+1. **Find your container name:**
+   ```sh
+   docker ps
    ```
-4. **View all data in the sessions table:**
-   ```sql
-   SELECT * FROM sessions;
+   Look for a container with a name like `digital-latin-postgres`.
+
+2. **Open a shell in the container:**
+   ```sh
+   docker exec -it digital-latin-postgres bash
    ```
-5. **To exit psql:**
+   - `-i`: Interactive mode (keeps STDIN open)
+   - `-t`: Allocates a pseudo-terminal (TTY) for shell access
+
+3. **Connect to PostgreSQL using psql:**
+   ```sh
+   psql -U <username> -d <database>
    ```
-   \q
-   ```
+   - `-U <username>`: Connect as the specified database user (e.g., `postgres`)
+   - `-d <database>`: Connect to the specified database (e.g., `sessions`)
+   - Example:  
+     ```sh
+     psql -U postgres -d sessions
+     ```
+   - You may be prompted for the password for the user you specify.
+
+---
+
+### Once Inside psql (applies to both methods)
+
+#### To List Tables:
+```sql
+\dt
+```
+Example output:
+```
+           List of relations
+ Schema |   Name    | Type  |  Owner
+--------+-----------+-------+----------
+ public | messages  | table | postgres
+ public | sessions  | table | postgres
+(2 rows)
+```
+
+#### To View All Data in the Sessions Table:
+```sql
+SELECT * FROM sessions;
+```
+Example:
+```
+ id |     name      |         created_at         |         updated_at         |                data
+----+---------------+---------------------------+---------------------------+----------------------------------------
+  1 | Session 1     | 2024-07-08 22:00:00+00    | 2024-07-08 22:10:00+00    | {...}
+```
+
+#### To View All Data in the Messages Table:
+```sql
+SELECT * FROM messages;
+```
+Example:
+```
+ id | session_id |   role   |         content         |        timestamp
+----+------------+----------+------------------------+--------------------------
+  1 |     1      |  user    | bona fide              | 2024-07-08 22:01:00+00
+```
+
+#### To Exit psql:
+```sql
+\q
+```
+
+#### To Exit the Container Shell:
+```sh
+exit
+```
 

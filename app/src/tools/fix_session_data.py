@@ -3,6 +3,10 @@ import json
 import re
 from pathlib import Path
 from datetime import datetime
+import logging
+import argparse
+
+logging.basicConfig(level=logging.INFO)
 
 DB_PATH = str(Path(__file__).parent / "sessions.db")
 
@@ -26,11 +30,11 @@ def update_session_names_from_titles():
                     c.execute('UPDATE sessions SET name=? WHERE id=?', (session_title.strip(), sid))
                     updated += 1
             except Exception as e:
-                print(f"Exception updating session id {sid}: {e}")
+                logging.warning(f"Exception updating session id {sid}: {e}")
                 continue
     conn.commit()
     conn.close()
-    print(f"Updated {updated} session names.")
+    logging.info(f"Updated {updated} session names.")
 
 def delete_sessions_without_title():
     """
@@ -49,11 +53,11 @@ def delete_sessions_without_title():
                 c.execute('DELETE FROM sessions WHERE id=?', (sid,))
                 deleted += 1
         except Exception as e:
-            print(f"Exception deleting session id {sid}: {e}")
+            logging.warning(f"Exception deleting session id {sid}: {e}")
             continue
     conn.commit()
     conn.close()
-    print(f"Deleted {deleted} sessions without session_title.")
+    logging.info(f"Deleted {deleted} sessions without session_title.")
 
 def delete_sessions_created_today():
     """
@@ -72,11 +76,11 @@ def delete_sessions_created_today():
                 c.execute('DELETE FROM sessions WHERE id=?', (sid,))
                 deleted += 1
         except Exception as e:
-            print(f"Exception deleting session id {sid}: {e}")
+            logging.warning(f"Exception deleting session id {sid}: {e}")
             continue
     conn.commit()
     conn.close()
-    print(f"Deleted {deleted} sessions created today.")
+    logging.info(f"Deleted {deleted} sessions created today.")
 
 def migrate_timestamp_to_created_and_updated():
     """
@@ -101,9 +105,16 @@ def migrate_timestamp_to_created_and_updated():
                 updated += 1
     conn.commit()
     conn.close()
-    print(f"Migrated {updated} sessions' timestamp to created_at and updated_at.")
+    logging.info(f"Migrated {updated} sessions' timestamp to created_at and updated_at.")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Fix session data JSON files.")
+    parser.add_argument("--dir", default="../data/sessions", help="Directory containing session JSON files")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO)
+    logging.info(f"Fixing session data in directory: {args.dir}")
+
     print("Select an operation to perform:")
     print("1. Update session names from session_title")
     print("2. Delete sessions without session_title")

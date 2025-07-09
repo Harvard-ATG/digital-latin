@@ -1,19 +1,17 @@
-# Copied and renamed Gemini integration file for use in Streamlit UI
-# File renamed to `gemini_pipeline.py`
-
-# This file is identical to the original `google_ai_pipeline_integration_latest.py` but renamed for clarity and use in the Streamlit UI.
-
 import os
 import json
 import requests
 from typing import Any, Callable, List, Dict, Tuple, Optional
 import logging
 from google.genai.errors import ClientError, ServerError, APIError
+from google.genai import types
+import google.genai
 import re
 import time
-import random
 import inspect
 import asyncio
+
+logging.getLogger(__name__)
 
 class GeminiPipeline:
     def __init__(self, input_data):
@@ -78,7 +76,6 @@ class GeminiPipeline:
             try:
                 model_id = self._prepare_model_id(model_id)
                 self.log.debug(f"Using model: {model_id}")
-                print(f"[GeminiPipeline] Using model: {model_id}")
             except ValueError as ve:
                 return f"Model Error: {ve}"
 
@@ -88,6 +85,9 @@ class GeminiPipeline:
             contents, system_instruction = self._prepare_content(messages)
             if not contents:
                 return "No content provided for generation."
+            if not system_instruction:
+                self.log.debug("No system instruction provided, proceeding without it.")
+            self.log.debug(f"System instruction included: {system_instruction[:100]}")  # Log first 100 characters
 
             client = self._get_client()
 
@@ -96,15 +96,8 @@ class GeminiPipeline:
             )
 
             # Log the request details before sending
-            print(f"[GeminiPipeline] About to send request to Gemini API with model: {model_id}")
-            print(f"[GeminiPipeline] Request contents: {contents}")
-            print(f"[GeminiPipeline] Request config: {gen_config}")
-            # No transport print, as not all clients have _transport
-
-            self.log.debug(
-                f"Calling generate_content (non-streaming) on client.models with model {model_id}"
-            )
-            print(f"[GeminiPipeline] Calling generate_content (non-streaming) on client.models with model {model_id}")
+            self.log.debug(f"About to send request to Gemini API with model: {model_id}")
+            self.log.debug(f"Calling generate_content (non-streaming) on client.models with model {model_id}")
             response = await self._retry_with_backoff(
                 client.models.generate_content,
                 model=model_id,
@@ -113,13 +106,13 @@ class GeminiPipeline:
             )
 
             # Log the response after receiving
-            print(f"[GeminiPipeline] Response received from Gemini API: {response}")
+            self.log.debug(f"Response received from Gemini API: {response}")
 
             return self._handle_standard_response(response)
 
         except ClientError as e:
-            self.log.error(f"Google API Client Error: {e.status_code} {e.message}")
-            return f"Google API Client Error: {e.status_code} {e.message}"
+            self.log.error(f"Google API Client Error: {e.message}")
+            return f"Google API Client Error: {e.message}"
         except ServerError as e:
             self.log.error(f"Google API Server Error: {e.status_code} {e.message}")
             return f"Google API Server Error: {e.status_code} {e.message}"
@@ -243,8 +236,8 @@ class GeminiPipeline:
                         }
                     )
 
-            print(f"[GeminiPipeline] Available models from API: {[m['id'] for m in available_models]}")
-            print(f"[GeminiPipeline] Allowed models list: {self._allowed_models_list}")
+            self.log.debug(f"Available models from API: {[m['id'] for m in available_models]}")
+            self.log.debug(f"Allowed models list: {self._allowed_models_list}")
 
             model_map = {model["id"]: model for model in available_models}
 
@@ -278,11 +271,9 @@ class GeminiPipeline:
         """
         api_key = os.getenv("GOOGLE_API_KEY")
         base_url = os.getenv("GOOGLE_API_BASE_URL") or "https://go.apis.huit.harvard.edu/ais-google-gemini"
-        print(f"[GeminiPipeline] _get_client: Using base_url: {base_url}")
+        self.log.debug(f"_get_client: Using base_url: {base_url}")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY is not set. Please provide the API key in the environment variables.")
-        import google.genai
-        from google.genai import types
         return google.genai.Client(
             api_key=api_key,
             http_options=types.HttpOptions(base_url=base_url),
@@ -299,6 +290,7 @@ class GeminiPipeline:
             (msg["content"] for msg in messages if msg.get("role") == "system"),
             None,
         )
+
 
         # Prepare contents for the API
         contents = []
@@ -339,8 +331,13 @@ class GeminiPipeline:
         }
         # Add system instruction if present
         if system_instruction:
+# If system_instruction is a string, log only the first 100 characters
+            if isinstance(system_instruction, str):
+                logging.debug(f"System instruction set: {system_instruction[:100]}")
+            else:
+                logging.debug(f"System instruction set: {system_instruction}")
             gen_config["system_instruction"] = system_instruction
-        # Add tools if present
+                    # Add tools if present
         if __tools__:
             gen_config["tools"] = __tools__
         return gen_config
