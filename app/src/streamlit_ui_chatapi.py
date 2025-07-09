@@ -257,7 +257,7 @@ with st.sidebar:
     if current_level == "Level I":
         st.session_state["system_prompt"] = render_jinja_prompt(LEVEL_1_PROMPT_JINJA, context)
         print(f"[DEBUG] Set system_prompt for Level I: {st.session_state['system_prompt'][:60]}")
-    else:
+    elif current_level == "Level II":
         st.session_state["system_prompt"] = render_jinja_prompt(LEVEL_2_PROMPT_JINJA, context)
         print(f"[DEBUG] Set system_prompt for Level II: {st.session_state['system_prompt'][:60]}")
 
