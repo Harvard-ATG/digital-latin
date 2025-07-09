@@ -20,6 +20,8 @@ try:
     print("[DEBUG] Imported datetime from datetime")
     from jinja2 import Template
     print("[DEBUG] Imported Template from jinja2")
+    import session_db_postgres as session_db
+    print("[DEBUG] Imported session_db_postgres")
 except Exception as e:
     print(f"[DEBUG] Exception during imports: {e}")
 
@@ -43,11 +45,11 @@ except Exception as e:
 # - Envionment varaibles - when it deines task definition - tathat ask should be provided with tehse environmnt varaiblels - and that is defined in params.
 # - It will pull dynamically from parameter store. Terraform.
     # - We could also stream interactions into cloud like logs, particularly if structured in usefulway.
-# - Make the size of the text-box larger.
-# - Chat's should automatically save at first user message.
-# - Remove past sessiosn from the sidebar.
-# - Disable level selection after the selection and make the level appear somewhere on the UI.
-# - Have a button that says new sesssion, this will clear the chat history and allow the user to start a new session.
+# - Make the size of the text-box larger (done)
+# - Chat's should automatically save at first user message. (in progress)
+# - Remove past sessiosn from the sidebar. (done)
+# - Disable level selection after the selection and make the level appear somewhere on the UI. (in progress)
+# - Have a button that says new sesssion, this will clear the chat history and allow the user to start a new session. (in progress)
 # - We will use 3A with link references only, not 3B. Add 3B if possible.
 # - Sentury integration
 
@@ -75,16 +77,18 @@ except Exception as e:
 
 # Set up prompt template paths
 # WHY: Prompts are stored as Jinja2 templates for easy editing and reuse. This allows for level-specific instructions.
-PROMPTS_DIR = Path(__file__).parent
+PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 LEVEL_1_PROMPT_JINJA = next(PROMPTS_DIR.glob("*level1*.jinja*"), None)
 LEVEL_2_PROMPT_JINJA = next(PROMPTS_DIR.glob("*level2*.jinja*"), None)
 
 def render_jinja_prompt(jinja_path, context=None):
     # WHY: Allows dynamic rendering of prompt templates with context variables.
+    rendered_prompt = ""
     if jinja_path and jinja_path.exists():
         template = Template(jinja_path.read_text())
-        return template.render(context or {})
-    return ""
+        rendered_prompt = template.render(context or {})
+    print(f"[DEBUG] Rendered prompt from {jinja_path}: {rendered_prompt[:60]}...")  # Log first 60 chars for brevity
+    return rendered_prompt
 
 # --- GLOBAL SESSION STATE INITIALIZATION & PENDING LOAD HANDLING ---
 
@@ -102,11 +106,12 @@ def human_readable_time(ts):
     except Exception:
         return ts
     
-# WHY: Streamlit reruns the script top-to-bottom on every user interaction. This block ensures that if a session is being loaded, its data is applied to session_state before any widgets are created, so the UI reflects the loaded session immediately.
+# WHY: Streamlit reruns the script top-to-bottom on every user interaction. This block ensures that if a session is being loaded,
+# its data is applied to session_state before any widgets are created, so the UI reflects the loaded session immediately.
 
 # Initialize should_call_llm if it doesn't exist
 if "should_call_llm" not in st.session_state:
-    print("[DEBUG] if 'should_call_llm' not in st.session_state")
+    print("[DEBUG] 'should_call_llm' not in st.session_state")
     st.session_state.should_call_llm = False
 
 # Process any pending session load data
@@ -153,7 +158,7 @@ if "should_call_llm" not in st.session_state:
 # session_db.ensure_sessions_table()
 #
 # --- Default to PostgreSQL ---
-import session_db_postgres as session_db
+
 os.environ["SESSION_DB_BACKEND"] = "postgres"
 session_db.ensure_sessions_table()
 
@@ -168,28 +173,28 @@ with st.sidebar:
         use_container_width=True,
         help="Start a new session. This will clear the chat and reset the level."
     )
-    # if new_session_sidebar:
-    #     print("[DEBUG] New Session button clicked")
-    #     # If a session is active, record end_reason before clearing
-    #     session_db_id = st.session_state.get("session_db_id")
-    #     session_title = st.session_state.get("session_title", "Untitled Session")
-    #     if session_db_id:
-    #         session_db.save_session(session_title, dict(st.session_state), session_db_id=session_db_id, end_reason="new session started")
-    #     st.session_state.clear()
-    #     st.rerun()
+    if new_session_sidebar:
+        print("[DEBUG] New Session button clicked")
+        # If a session is active, record end_reason before clearing
+        session_db_id = st.session_state.get("session_db_id")
+        session_title = st.session_state.get("session_title", "Untitled Session")
+        if session_db_id:
+            session_db.save_session(session_title, dict(st.session_state), session_db_id=session_db_id, end_reason="new session started")
+        st.session_state.clear()
+        st.rerun()
     # Style the sidebar New Session button to be dark grey with white text
-    st.markdown("""
-        <style>
-        div[data-testid="stSidebar"] button[kind="secondary"]#new_session_sidebar_btn {
-            background-color: #333 !important;
-            color: #fff !important;
-            border-radius: 6px !important;
-            font-weight: 600;
-            margin-top: 0.5em;
-            margin-bottom: 0.5em;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # st.markdown("""
+    #     <style>
+    #     div[data-testid="stSidebar"] button[kind="secondary"]#new_session_sidebar_btn {
+    #         background-color: #333 !important;
+    #         color: #fff !important;
+    #         border-radius: 6px !important;
+    #         font-weight: 600;
+    #         margin-top: 0.5em;
+    #         margin-bottom: 0.5em;
+    #     }
+    #     </style>
+    # """, unsafe_allow_html=True)
 
     st.title("pAIdagogue (Chat API)")
     st.markdown(
@@ -214,7 +219,7 @@ with st.sidebar:
         st.session_state.level_chatapi = "Select a level"
 
     # WHY: These selectboxes are bound to session_state so that loading a session or changing a setting updates the UI and logic everywhere.
-    # Remove the selectbox for model selection from the sidebar UI.
+    # Removed the selectbox for model selection from the sidebar UI.
     # Level selection: no default, starts with placeholder, only enabled if not already selected for this session.
     level_options = ["Select a level", "Level I", "Level II"]
     level_selected = st.session_state.get("level_selected", False)
@@ -228,14 +233,15 @@ with st.sidebar:
         disabled=level_disabled
     )
     # Only allow selection if not disabled and a real level is chosen
-    # if not level_selected and level in ["Level I", "Level II"]:
-    #     print("[DEBUG] if not level_selected and level in ['Level I', 'Level II']")
-    #     st.session_state["level_selected"] = True
-    #     # Save a new session immediately when level is selected
-    #     session_title = st.session_state.get("session_title", "Untitled Session")
-    #     session_db_id = session_db.save_session(session_title, dict(st.session_state))
-    #     st.session_state["session_db_id"] = session_db_id
-    #     st.rerun()
+    if level_selected is False and level in ["Level I", "Level II"]:
+        print(f"[DEBUG] level_selected is {level} and thus not False and level in ['Level I', 'Level II']")
+        st.session_state["level_selected"] = True
+
+        # Save a new session immediately when level is selected
+        session_title = st.session_state.get("session_title", "Untitled Session")
+        session_db_id = session_db.save_session(session_title, dict(st.session_state))
+        st.session_state["session_db_id"] = session_db_id
+        st.rerun()
 
     # Show caption if a real level is selected and selector is disabled
     if (
@@ -246,12 +252,14 @@ with st.sidebar:
         st.caption("To reset or select another level, start a new session.")
 
     # WHY: System prompt is dynamically set based on the selected level, using Jinja2 templates for flexibility.
-    current_level = st.session_state.get("level_chatapi", "Level I")
+    print(f"[DEBUG] About to set system prompt for current_level: {current_level}")
     context = {}
     if current_level == "Level I":
         st.session_state["system_prompt"] = render_jinja_prompt(LEVEL_1_PROMPT_JINJA, context)
+        print(f"[DEBUG] Set system_prompt for Level I: {st.session_state['system_prompt'][:60]}")
     else:
         st.session_state["system_prompt"] = render_jinja_prompt(LEVEL_2_PROMPT_JINJA, context)
+        print(f"[DEBUG] Set system_prompt for Level II: {st.session_state['system_prompt'][:60]}")
 
     print(f"[DEBUG] System prompt set: {st.session_state.get('system_prompt', '')[:50]}")
     # --- BEGIN: Standard (non-DB) session sidebar code (TEMPORARILY DISABLED) ---
@@ -423,40 +431,13 @@ print(f"[Streamlit] Rendering chat history. Total messages: {len(st.session_stat
 for idx, msg in enumerate(st.session_state["chat_messages"]):
     with st.chat_message(msg["role"]):
         if msg["role"] == "user":
-            # Only render the message content, not the <style> block, for each message
             st.markdown(
                 f"<div style='background:#e3f2fd; color:#17416b; border-radius:8px; padding:16px 18px; margin-bottom:8px; font-size:1.05em; width:100%; max-width:648px; box-sizing:border-box; word-break:break-word; overflow-wrap:break-word;'>{html.escape(msg['content'])}</div>",
                 unsafe_allow_html=True
             )
         elif msg["role"] == "assistant":
-            def format_assistant_text(text):
-                # ...existing formatting logic...
-                return text  # or your formatted HTML
-            formatted_content = format_assistant_text(msg['content'])
-            copy_id = f"copy_content_{idx}"
-            st.markdown(
-                f"""
-                <div style='background:#fff9e3; color:#665c00; border-radius:8px; padding:16px 18px; margin-bottom:8px; font-size:1.05em; width:100%; max-width:648px; box-sizing:border-box; display:flex; align-items:center; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;'>
-                    <div style='flex:1; width:100%; max-width:100%; word-break:break-word; overflow-wrap:break-word;'>
-                        {formatted_content}
-                    </div>
-                    <textarea id="{copy_id}" style="position:absolute; left:-9999px;">{msg['content'].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')}</textarea>
-                    <button style='background:rgba(240,240,240,0.95); border:1px solid #ddd; border-radius:6px; padding:2px 6px; margin-left:10px; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,0.04); position:relative; top:2px; transition:box-shadow 0.2s; display:flex; align-items:center;' title='Copy' onclick="copyToClipboard_{copy_id}()">
-                        <span class='material-symbols-outlined'>content_copy</span>
-                    </button>
-                </div>
-                <script>
-                function copyToClipboard_{copy_id}() {{
-                    var textarea = document.getElementById('{copy_id}');
-                    textarea.style.display = 'block';
-                    textarea.select();
-                    document.execCommand('copy');
-                    textarea.style.display = 'none';
-                }}
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
+            # Show assistant response as plain text, no formatting/markdown
+            st.text(msg['content'])
 
 # --- RESTORE THE CHAT INPUT ---
 # WHY: The chat input box is always shown at the bottom, unless a system prompt is missing (e.g., before level selection).
@@ -536,8 +517,8 @@ if chat_enabled:
 # This is the LLM call trigger block
 # WHY: When should_call_llm is True, call the LLM with the current chat history and system prompt, append the response, and rerun to update the UI.
 if st.session_state.should_call_llm:
+    st.session_state.should_call_llm = False  # Move this to the very top to prevent duplicate LLM calls on rerun
     print("[DEBUG] if st.session_state.should_call_llm")
-    st.session_state.should_call_llm = False
 
     system_prompt = st.session_state.get("system_prompt", "")
     messages = [{"role": "system", "content": system_prompt}] + [
@@ -547,45 +528,43 @@ if st.session_state.should_call_llm:
     try:
         print("[DEBUG] try block before LLM call")
         response_content = asyncio.run(pipe.pipe({"model": selected_model, "messages": messages}, {}, lambda x: None, {}))
-        print("[DEBUG] after LLM call")
-        # Only append if not already the last assistant message (prevents duplicates)
+        print(f"[DEBUG] Raw response_content type: {type(response_content)}")
+        print(f"[DEBUG] Raw response_content repr: {repr(response_content)}")
+        print(f"[DEBUG] Raw response_content str: {str(response_content)}")
+        # Only append if not already present as the last assistant message
         if not (
             st.session_state["chat_messages"]
             and st.session_state["chat_messages"][-1]["role"] == "assistant"
             and st.session_state["chat_messages"][-1]["content"].strip() == response_content.strip()
         ):
-            print("[DEBUG] if not duplicate assistant message")
+            print("[DEBUG] Appending assistant message to chat_messages")
             st.session_state["chat_messages"].append({"role": "assistant", "content": response_content})
             # --- Log assistant message with timestamp and time delta ---
             session_db_id = st.session_state.get("session_db_id")
             if session_db_id:
                 import session_db_postgres as session_db
                 session_db.log_message(session_db_id, "assistant", response_content)
-        # Session title generation:
-        # Only generate title if there isn't one already AND it's the *first* user message
-        # AND we are NOT in the midst of a rerun specifically from loading a session
-        if (
-            not st.session_state.get("session_title")
-            and len([m for m in st.session_state["chat_messages"] if m["role"] == "user"]) == 1
-            and not st.session_state.get("_rerun_from_load", False)
-        ):
-            print("[DEBUG] if generating new session title")
-            summary_prompt = "Summarize the following topic in 3-5 words for a session title: " + st.session_state["chat_messages"][-1]["content"]
-            summary_messages = [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": summary_prompt},
-            ]
-            # pipe.pipe also returns a string for the summary title
-            session_title_raw = asyncio.run(pipe.pipe({"model": selected_model, "messages": summary_messages}, {}, lambda x: None, {}))
-            session_title = session_title_raw.strip().replace("\n", " ") # Directly process the string
-            st.session_state["session_title"] = session_title
-            print(f"[Streamlit] Generated session_title: {st.session_state['session_title']}")
-
+        else:
+            print("[DEBUG] Assistant message already present, not appending.")
+        # Session title generation (do NOT append to chat history)
+        # if (
+        #     not st.session_state.get("session_title")
+        #     and len([m for m in st.session_state["chat_messages"] if m["role"] == "user"]) == 1
+        #     and not st.session_state.get("_rerun_from_load", False)
+        # ):
+        #     print("[DEBUG] if generating new session title")
+        #     summary_prompt = "Summarize the following topic in 3-5 words for a session title: " + st.session_state["chat_messages"][-1]["content"]
+        #     summary_messages = [
+        #         {"role": "system", "content": "You are a helpful assistant."},
+        #         {"role": "user", "content": summary_prompt},
+        #     ]
+        #     session_title_raw = asyncio.run(pipe.pipe({"model": selected_model, "messages": summary_messages}, {}, lambda x: None, {}))
+        #     session_title = session_title_raw.strip().replace("\n", " ")
+        #     st.session_state["session_title"] = session_title
+        #     print(f"[Streamlit] Generated session_title: {st.session_state['session_title']}")
         st.rerun() # Rerun to display the new assistant message
     except Exception as e:
         print(f"[DEBUG] Exception in LLM call: {e}")
-        # Improved error message to still show context
-        # Now 'response_content' is definitely a string in this specific error handler
         error_info = f"Error: {e}\nRaw object type: {type(e.__context__ if e.__context__ else 'Unknown')}\nRaw object details: {response_content if 'response_content' in locals() else 'Not available'}"
         st.session_state["chat_messages"].append({"role": "assistant", "content": error_info})
         st.rerun()
