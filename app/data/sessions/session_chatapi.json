@@ -1,0 +1,1 @@
+{"chat_messages": [{"role": "user", "content": "Hi my name is Rusty. I am a kid from Rome."}, {"role": "assistant", "content": "Salv\u0113. N\u014dmen mihi est Russus. Ego sum puer R\u014dm\u0101nus."}], "session_title": "Introducing a Roman Boy", "system_prompt": "You are a translator and you will translate to level 1 Latin."}

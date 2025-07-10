@@ -1,0 +1,6 @@
+.env
+.venv
+venv/
+__pycache__/
+.notes*
+streamlit-ui.code-workspace
