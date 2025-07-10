@@ -1,19 +1,19 @@
-from pathlib import Path
 import os
 import sys
 import json
 import asyncio
 import datetime
 import html
-import streamlit as st
-from gemini_pipeline import GeminiPipeline as Pipe
-from datetime import datetime
-from jinja2 import Template
 import session_db_postgres as session_db
 import logging
 import sentry_sdk
 import traceback
 import re
+import streamlit as st
+from pathlib import Path
+from gemini_pipeline import GeminiPipeline as Pipe
+from datetime import datetime
+from jinja2 import Template
 
 # Initialize Sentry for error tracking
 sentry_sdk.init(
@@ -48,33 +48,24 @@ except Exception as e:
     logger.debug(f"Exception during DB setup: {e}")
 
 ## TODO: 
-# - Git repo a repo in harvard atg.
 # - Possibly - Mount EFS for data storage.
     # - Swap out sql lite to postgres database (we already have a shared rds instance, we could create a new database in there.)
     ## - If postgress is not easy, then we will go with a SQLite DB, and work to set up an EFS mount for data storage.****
     ## - DB exists and path. IF DB exist, more complicated than manual. Matter of principle often kept DB funcationalitiy out of side, since life cycles are different, if there is osmethign likekthat there is db. python script.
     ## - Can that be optionally turned off, or turned on.  That might be a bit of a blocker. Enable or not enable it, if we have to demo without that. 
     ## - Feature flag.
-# - Envionment varaibles - when it deines task definition - tathat ask should be provided with tehse environmnt varaiblels - and that is defined in params.
+# - Envionment varaibles - Add to param store, when it defines task definition - tathat ask should be provided with tehse environmnt varaiblels - and that is defined in params.
 # - It will pull dynamically from parameter store. Terraform.
     # - We could also stream interactions into cloud like logs, particularly if structured in usefulway.
 # - Make the size of the text-box larger (done)
-# - Chat's should automatically save at first user message. (in progress)
+# - Chat's should automatically save at first user message. (done)
 # - Remove past sessiosn from the sidebar. (done)
-# - Disable level selection after the selection and make the level appear somewhere on the UI. (in progress)
-# - Have a button that says new sesssion, this will clear the chat history and allow the user to start a new session. (in progress)
+# - Disable level selection after the selection and make the level appear somewhere on the UI. (done)
+# - Have a button that says new sesssion, this will clear the chat history and allow the user to start a new session. (done)
 # - We will use 3A with link references only, not 3B. Add 3B if possible.
-# - Sentury integration
+# - Sentury integration (done)
 
-# Load environment variables
-# WHY: Allows configuration (e.g., allowed models, API keys) to be set outside the code for flexibility and security.
-env_file = Path(__file__).parent.parent / "../.env"
-if env_file.exists():
-    with open(env_file) as f:
-        env_vars = dict(
-            line.strip().split("=", 1) for line in f if "=" in line.strip()
-        )
-        os.environ.update(env_vars)
+# Load environment variables handled in docker-compose, no need to load here.
 
 SKIP_DB = os.getenv("SKIP_DB", "false").lower() == "true"
 
@@ -462,6 +453,7 @@ section[data-testid="stChatInput"] input {
     padding: 20px 24px !important;
     resize: vertical !important;
 }
+<!-- Start Style for chat messages -->
 div.st-emotion-cache-1fee4w7:has([data-testid="stChatMessageAvatarUser"]) {
     background: #fff !important;
 }
@@ -486,12 +478,14 @@ div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"
     padding: 16px 18px !important;
     margin-bottom: 0.5em !important;
 }
+<!-- Style - formats bullets -->
 .custom-section-title {
     margin-bottom: 0.2em !important;
 }
 .custom-bullet-list {
     margin-top: 0 !important;
 }
+<!-- End Style for chat messages -->
 </style>  
 """, unsafe_allow_html=True)
 

@@ -14,6 +14,10 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_HOST=${DB_HOST}
       - POSTGRES_PORT=${DB_PORT}
+      - SKIP_DB=${SKIP_DB}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_ALLOWED_MODELS=${GOOGLE_ALLOWED_MODELS}
+      - GOOGLE_API_BASE_URL=${GOOGLE_API_BASE_URL}
     depends_on:
       - digital-latin-postgres
 
