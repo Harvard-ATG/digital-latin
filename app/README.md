@@ -93,7 +93,7 @@ For more details, see the [ngrok documentation](https://ngrok.com/docs).
 
 ## Troubleshooting
 - Ensure all dependencies are installed.
-- Verify the `.env` file contains the required environment variables.
+- Verify the `.env` file contains the required environment variables as referenced in the `.env.example` file.
 - Check the terminal for error messages if the application fails to start.
 
 ## License
