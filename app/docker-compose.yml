@@ -1,0 +1,52 @@
+services:
+  digital-latin-streamlit-ui-main:
+    build: .
+    container_name: digital-latin-streamlit-ui-main
+    command: streamlit run src/streamlit_ui_main.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./:/app
+    environment:
+      - SESSION_DB_BACKEND=${SESSION_DB_BACKEND}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    depends_on:
+      - digital-latin-postgres
+
+  digital-latin-streamlit-ui-chatapi:
+    build: .
+    container_name: digital-latin-streamlit-ui-chatapi
+    command: streamlit run src/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0
+    ports:
+      - "8502:8502"
+    volumes:
+      - ./:/app
+    environment:
+      - SESSION_DB_BACKEND=${SESSION_DB_BACKEND}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+    depends_on:
+      - digital-latin-postgres
+
+  digital-latin-postgres:
+    image: postgres:16
+    container_name: digital-latin-postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
