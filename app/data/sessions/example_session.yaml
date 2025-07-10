@@ -1,0 +1,101 @@
+descriptor: |
+  The first session object (session_id_type: 'example', message_id_type: 'db') represents a session when skip_db is false and data is written to the database.
+  The second session object (session_id_type: 'uuid', message_id_type: 'uuid') represents a session when skip_db is true and data is only written to files.
+  Use this file as a reference for both scenarios.
+
+sessions:
+  - session_id: 42
+    session_id_type: example
+    name: Sample Latin Session
+    updated_at: "2025-07-10T12:00:00.000000"
+    end_reason: null
+    data:
+      level_chatapi: Level I
+      system_prompt: >
+        You are a helpful and accurate Latin language assistant. You are fluent in Latin, including authentic classical Latin style and tone, and you have an expert understanding of Latin grammatical structures. You use your knowledge to help Latin instructors simplify classical Latin passages so they are understandable for students who have finished one year of college Latin.
+      selected_model_chatapi: gemini-2.5-pro
+      level_selected: true
+      should_call_llm: false
+      chat_input_text: ""
+      new_session_sidebar_btn: false
+      send_chat_btn: false
+      chat_messages:
+        - role: user
+          content: "Salve! Quid agis?"
+        - role: assistant
+          content: "Salve! Bene valeo. Quomodo te habes?"
+        - role: user
+          content: "Quid est nomen tibi?"
+        - role: assistant
+          content: "Nomen mihi est pAIdagogue."
+      messages:
+        - id: 1
+          role: user
+          content: "Salve! Quid agis?"
+          timestamp: "2025-07-10T12:00:01.000000"
+          time_delta: null
+        - id: 2
+          role: assistant
+          content: "Salve! Bene valeo. Quomodo te habes?"
+          timestamp: "2025-07-10T12:00:02.000000"
+          time_delta: 1.0
+        - id: 3
+          role: user
+          content: "Quid est nomen tibi?"
+          timestamp: "2025-07-10T12:00:03.000000"
+          time_delta: 1.0
+        - id: 4
+          role: assistant
+          content: "Nomen mihi est pAIdagogue."
+          timestamp: "2025-07-10T12:00:04.000000"
+          time_delta: 1.0
+      last_message_id: 4
+      message_id_type: db
+
+  - session_id: b7e2c1a0-9f3a-4c2e-8e2a-1d2b3c4d5e6f
+    session_id_type: uuid
+    name: Sample Latin Session (UUID)
+    updated_at: "2025-07-10T13:00:00.000000"
+    end_reason: null
+    data:
+      level_chatapi: Level II
+      system_prompt: >
+        You are a helpful and accurate Latin language assistant. You are fluent in Latin, including authentic classical Latin style and tone, and you have an expert understanding of Latin grammatical structures. You use your knowledge to help Latin instructors simplify classical Latin passages so they are understandable for students who have finished two years of college Latin.
+      selected_model_chatapi: gemini-2.5-pro
+      level_selected: true
+      should_call_llm: false
+      chat_input_text: ""
+      new_session_sidebar_btn: false
+      send_chat_btn: false
+      chat_messages:
+        - role: user
+          content: "Salve! Quid novi?"
+        - role: assistant
+          content: "Salve! Nihil novi, sed semper paratus sum ad auxilium."
+        - role: user
+          content: "Potesne mihi fabulam narrare?"
+        - role: assistant
+          content: "Certe! Quam fabulam audire vis?"
+      messages:
+        - id: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
+          role: user
+          content: "Salve! Quid novi?"
+          timestamp: "2025-07-10T13:00:01.000000"
+          time_delta: null
+        - id: b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e
+          role: assistant
+          content: "Salve! Nihil novi, sed semper paratus sum ad auxilium."
+          timestamp: "2025-07-10T13:00:02.000000"
+          time_delta: 1.0
+        - id: c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f
+          role: user
+          content: "Potesne mihi fabulam narrare?"
+          timestamp: "2025-07-10T13:00:03.000000"
+          time_delta: 1.0
+        - id: d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a
+          role: assistant
+          content: "Certe! Quam fabulam audire vis?"
+          timestamp: "2025-07-10T13:00:04.000000"
+          time_delta: 1.0
+      last_message_id: d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a
+      message_id_type: uuid

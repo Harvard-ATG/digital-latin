@@ -1,2 +1,277 @@
 # digital-latin
-Contains the  digital latin project, contains front end and back end components of the application
+Contains the digital latin project files for the front-end and back-end of the application.  Digital latin background.
+
+The front-end component is a streamlit-based frontend for interacting with the Gemini pipeline. It allows users to select models, set system prompts, engage in multi-turn interactions, and save sessions.
+
+## Features
+- **Model Selection**: Choose from a list of allowed models.
+- **System Prompts**: Set predefined prompts for Level I and Level II Latin translations.
+- **Multi-Turn Interaction**: Chat with the Gemini pipeline and view the conversation history.
+- **Session Management**: Save and load user sessions.
+
+## Prerequisites
+- Python 3.12 or later
+- `pip` installed
+
+### Environment Variables
+
+Follow the .env.example file for the following environment variables, which should be set in your `.env` file:
+
+**Note:**  
+- Files written by the application (such as debug JSON files) are stored in the container or server's local filesystem.  
+- These files are **not** written back to the source repository.  
+- To access these files in production (e.g., on AWS), you must exec into the running container or mount a persistent volume.
+
+## Setup Instructions
+
+### 1. Clone the Repository
+Navigate to the `app` directory:
+```bash
+cd /Users/kevingray/codebase/harvard-atg/digital-latin/app
+```
+
+### 2. Create a Virtual Environment
+Create and activate a virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+Install the required Python packages:
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Run the Application
+Start the Streamlit application:
+```bash
+streamlit run streamlit_ui_chatapi.py --server.port 8502
+```
+
+### 5. Access the UI
+Open your browser and navigate to:
+```
+http://localhost:8502
+```
+
+## Docker & Docker Compose
+
+You can run both apps using Docker Compose. This will start both services, each on its own port (8501 and 8502), sharing the same code and database files.
+
+```bash
+docker-compose up --build
+```
+
+- Chat API app: http://localhost:8502
+
+## Exposing Your App with ngrok
+
+To share your local Streamlit app with others, use [ngrok](https://ngrok.com/docs):
+
+1. **Install ngrok**
+   - Download from https://ngrok.com/download or use Homebrew:
+     ```sh
+     brew install ngrok/ngrok/ngrok
+     ```
+2. **Start your Streamlit app(s)** (see above)
+   
+3. **Expose your app**
+   - In a new terminal, run:
+     ```sh
+     ngrok http 8502
+     ```
+   - ngrok will display a public forwarding URL (e.g., `https://xxxx.ngrok-free.app`). Share this link to give others access.
+
+For more details, see the [ngrok documentation](https://ngrok.com/docs).
+
+# Project File Structure (with comments)
+
+app/                     # Main application directory
+├── data/                # Data storage (sessions, databases, etc.)
+│   ├── sessions.db      # SQLite database for session management
+│   └── sessions/        # Example and debug session data
+│       ├── example_session.yaml   # Example session data in YAML format
+│       └── postgres_debug_session_write.jsonl  # Debug session data in JSONL format
+├── docs/                # Project documentation (if any)
+├── prompts/             # Prompt templates for LLMs
+│   ├── level1_system_prompt.jinja2
+│   ├── level2_system_prompt.jinja2
+│   └── u1.0_virgil_user.jinja2
+└── src/                 # Source code for the application
+    ├── core/            # Core application logic
+    │   ├── gemini_pipeline.py         # Gemini pipeline integration
+    │   ├── session_db_postgres.py     # PostgreSQL session DB logic
+    │   ├── session_db_sqlite.py       # SQLite session DB logic
+    │   └── streamlit_ui_chatapi.py    # Streamlit chat API frontend
+    └── tools/           # Utility scripts and tools
+        ├── export_sessions_to_markdown.py
+        ├── fix_session_data.py
+        ├── load_dummy_sessions.py
+        └── migrate_sessions_schema.py
+
+# Project-level support/configuration files
+Dockerfile               # Docker build instructions
+entrypoint.sh            # Entrypoint script for Docker
+requirements.txt         # Python dependencies
+README.md                # Project overview and documentation
+docker-compose.yml       # Docker Compose configuration
+changelog.md             # Project changelog
+streamlit-ui.code-workspace # VS Code workspace settings
+
+## Troubleshooting
+- Ensure all dependencies are installed.
+- Verify the `.env` file contains the required environment variables as referenced in the `.env.example` file.
+- Check the terminal for error messages if the application fails to start.
+
+## License
+This project is licensed under the Apache License 2.0.
+
+## Further Reading (Streamlit Official Documentation)
+
+- **Understanding Streamlit's client-server architecture:**
+  - Explains how Streamlit apps have a Python backend (server) and a browser frontend (client), and how they communicate. Good for understanding what runs where and how Streamlit handles UI updates.
+  - [Understanding Streamlit's client-server architecture](https://docs.streamlit.io/develop/concepts/architecture/architecture)
+
+- **Intro to custom components:**
+  - Shows how to extend Streamlit with your own HTML/JS/React widgets, and the basics of using or building custom components.
+  - [Intro to custom components](https://docs.streamlit.io/develop/concepts/custom-components/intro)
+
+- **Create a Component:**
+  - Step-by-step guide to building your own Streamlit Component, including sending data between Python and JavaScript.
+  - [Create a Component](https://docs.streamlit.io/develop/concepts/custom-components/create)
+
+---
+
+## Community-Contributed Resources and Other Perspectives
+
+- **Streamlit Components Gallery:**
+  - A collection of community-built Streamlit Components, many of which use JavaScript/React. Browse, discover, and plug in new widgets and add new features to your app using community-built Streamlit Components. Many use JavaScript/React, but you only need Python—Streamlit handles the JavaScript for you.
+  - [Streamlit Components Gallery](https://streamlit.io/components)
+
+- **Streamlit in 5 Minutes (YouTube, Data Professor):**
+  - Quick, beginner-friendly overview of Streamlit's core ideas and workflow.
+  - [Watch here](https://www.youtube.com/watch?v=UI4f4iiVT6c)
+  
+- **5 Things I Wish I Knew Before Learning Streamlit (YouTube, Data Professor):**
+  - Covers key tips and common pitfalls for new Streamlit users, helping you get started faster and avoid mistakes.
+  - [Watch here](https://www.youtube.com/watch?v=IOYHVPPbZII)
+
+- **How to Control the Layout in Streamlit in 20 Minutes! (Streamlit Tutorials 02, Chanin Nantasenamat):**
+  - A practical walkthrough on customizing and controlling layout in Streamlit apps, including columns, containers, and advanced layout tips.
+  - [Watch here](https://www.youtube.com/watch?v=saOv9z6Fk88)
+
+## Docker Entrypoint Script Permissions
+
+The `entrypoint.sh` script is automatically made executable during the Docker build process (see the Dockerfile). You do **not** need to run `chmod +x entrypoint.sh` manually. This ensures the script always runs correctly for all contributors and CI/CD environments.
+
+## Inspecting Your PostgreSQL Database in Docker
+
+You can use either `docker-compose exec` or `docker exec` to access your running PostgreSQL container.  
+**Choose the method that matches how you started your containers:**
+
+---
+
+### Option 1: Using `docker-compose exec` (recommended if you used Docker Compose)
+
+1. **Open a shell in the postgres container:**
+   ```sh
+   docker-compose exec postgres bash
+   ```
+   - `exec`: Run a command in a running container.
+   - `postgres`: The service name as defined in your `docker-compose.yml`.
+   - `bash`: Start a bash shell.
+
+2. **Connect to PostgreSQL using psql:**
+   ```sh
+   psql -U <username> -d <database>
+   ```
+   - `-U <username>`: Connect as the specified database user (e.g., `postgres`)
+   - `-d <database>`: Connect to the specified database (e.g., `sessions`)
+   - Example:  
+     ```sh
+     psql -U postgres -d sessions
+     ```
+   - You may be prompted for the password for the user you specify.
+
+---
+
+### Option 2: Using `docker exec` (if you started the container directly)
+
+1. **Find your container name:**
+   ```sh
+   docker ps
+   ```
+   Look for a container with a name like `digital-latin-postgres`.
+
+2. **Open a shell in the container:**
+   ```sh
+   docker exec -it digital-latin-postgres bash
+   ```
+   - `-i`: Interactive mode (keeps STDIN open)
+   - `-t`: Allocates a pseudo-terminal (TTY) for shell access
+
+3. **Connect to PostgreSQL using psql:**
+   ```sh
+   psql -U <username> -d <database>
+   ```
+   - `-U <username>`: Connect as the specified database user (e.g., `postgres`)
+   - `-d <database>`: Connect to the specified database (e.g., `sessions`)
+   - Example:  
+     ```sh
+     psql -U postgres -d sessions
+     ```
+   - You may be prompted for the password for the user you specify.
+
+---
+
+### Once Inside psql (applies to both methods)
+
+#### To List Tables:
+```sql
+\dt
+```
+Example output:
+```
+           List of relations
+ Schema |   Name    | Type  |  Owner
+--------+-----------+-------+----------
+ public | messages  | table | postgres
+ public | sessions  | table | postgres
+(2 rows)
+```
+
+#### To View All Data in the Sessions Table:
+```sql
+SELECT * FROM sessions;
+```
+Example:
+```
+ id |     name      |         created_at         |         updated_at         |                data
+----+---------------+---------------------------+---------------------------+----------------------------------------
+  1 | Session 1     | 2024-07-08 22:00:00+00    | 2024-07-08 22:10:00+00    | {...}
+```
+
+#### To View All Data in the Messages Table:
+```sql
+SELECT * FROM messages;
+```
+Example:
+```
+ id | session_id |   role   |         content         |        timestamp
+----+------------+----------+------------------------+--------------------------
+  1 |     1      |  user    | bona fide              | 2024-07-08 22:01:00+00
+```
+
+#### To Exit psql:
+```sql
+\q
+```
+
+#### To Exit the Container Shell:
+```sh
+exit
+```
+
+
+
