@@ -66,7 +66,7 @@ graph TD
   **Option 1: Docker Compose (Recommended)**
 
   ```bash
-  docker-compose up --build
+  docker-compose -f docker-compose.local.yml up --build
   # access: http://localhost:8502
   ```
 
@@ -76,8 +76,8 @@ graph TD
   git clone https://github.com/your-org/digital-latin.git
   cd digital-latin/app
 
-  python3 -m venv venv
-  source venv/bin/activate
+  python3 -m venv .venv
+  source .venv/bin/activate
 
   pip install -r requirements.txt
 
@@ -117,12 +117,17 @@ graph TD
 - Exit psql: `\q`
 - Exit container: `exit`
 
+
+
 - If you change the Postgres image version in docker-compose:
 
     ```bash
     # Back up data before this step!
-    docker-compose down -v
-    docker-compose up --build
+
+    # Removes the docker volume that retains data between container deployments
+    docker-compose -f docker-compose.local.yml down -v
+
+    docker-compose -f docker-compose.local.yaml up --build
     ```
 
 </details>
@@ -248,3 +253,19 @@ For details, see your devops mono-repo (e.g., `atg-ops-appserver`).
 ## License
 
 Forthcoming
+
+## User Tips (Quick Reference)
+
+<details>
+<summary><strong>User Guide (click to expand)</strong></summary>
+
+- Start a new session for each passage to avoid mixing contexts.
+- Once you select a level, it is locked for the session. To change levels, start a new session.
+- If you don’t see the sidebar, hover in the upper left corner and click the double arrows (≡) to open it.
+- On mobile, the sidebar may be hidden by default—use the double arrows to open it.
+- Wait for the “thinking” icon in the upper right to disappear before your next action.
+- Streamlit is less reactive than some web apps. Use slow, intentional clicks and wait for the app to update before clicking again.
+
+See [user_guide.md](./user_guide.md) for full instructions.
+
+</details>
