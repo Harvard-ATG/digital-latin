@@ -85,6 +85,10 @@ def save_session(session_name, session_data=None, session_db_id=None, end_reason
     now = datetime.now().isoformat()
     session_data_json = json.dumps(session_data) if session_data is not None else None
 
+    # Default end_reason if not provided
+    if end_reason is None:
+        end_reason = "not captured"
+
     # TODO: Add feature toggle or config option to disable this
     # if skip_db is True, then skip saving to the database
     if skip_db and session_db_id is None:
@@ -98,27 +102,13 @@ def save_session(session_name, session_data=None, session_db_id=None, end_reason
             c = conn.cursor()
 
             if session_db_id:
-                if end_reason is not None:
-                    c.execute('UPDATE sessions SET name=%s, data=COALESCE(%s, data), updated_at=%s, end_reason=%s WHERE id=%s',
-                            (session_name, session_data_json, now, end_reason, session_db_id))
-                else:
-                    c.execute('UPDATE sessions SET name=%s, data=COALESCE(%s, data), updated_at=%s WHERE id=%s',
-                            (session_name, session_data_json, now, session_db_id))
+                c.execute('UPDATE sessions SET name=%s, data=COALESCE(%s, data), updated_at=%s, end_reason=%s WHERE id=%s',
+                        (session_name, session_data_json, now, end_reason, session_db_id))
             else:
-                c.execute('SELECT id, created_at FROM sessions WHERE name=%s', (session_name,))
-                row = c.fetchone()
-                if row:
-                    session_db_id = row[0]
-                    if end_reason is not None:
-                        c.execute('UPDATE sessions SET name=%s, data=COALESCE(%s, data), updated_at=%s, end_reason=%s WHERE id=%s',
-                                (session_name, session_data_json, now, end_reason, session_db_id))
-                    else:
-                        c.execute('UPDATE sessions SET name=%s, data=COALESCE(%s, data), updated_at=%s WHERE id=%s',
-                                (session_name, session_data_json, now, session_db_id))
-                else:
-                    c.execute('INSERT INTO sessions (name, data, created_at, updated_at, end_reason) VALUES (%s, %s, %s, %s, %s) RETURNING id',
-                            (session_name, session_data_json, now, now, end_reason))
-                    session_db_id = c.fetchone()[0]
+                # Always insert a new session, do not check for existing by name
+                c.execute('INSERT INTO sessions (name, data, created_at, updated_at, end_reason) VALUES (%s, %s, %s, %s, %s) RETURNING id',
+                        (session_name, session_data_json, now, now, end_reason))
+                session_db_id = c.fetchone()[0]
             conn.commit()
             conn.close()    
             session_id_type = "db"  # Use "id" for SERIAL primary key
