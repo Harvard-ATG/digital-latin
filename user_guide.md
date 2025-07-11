@@ -8,7 +8,8 @@ This app helps Latin instructors simplify authentic Latin passages for students 
 ## Getting Started
 
 ### 1. Accessing the App
-- Open the app in your browser (URL provided by your admin or IT team).
+- Open the app in your browser at: [https://digital-latin.dev.tlt.harvard.edu/](https://digital-latin.dev.tlt.harvard.edu/)
+- **Important:** You must be connected to the Harvard VPN to access this URL.
 - The sidebar on the left is your main navigation and settings area.
 
 ### 2. Sidebar Navigation
