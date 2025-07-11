@@ -10,12 +10,14 @@ echo "[DEBUG] Environment variables:"
 env
 
 # This script is designed to run in a Docker container for the Digital Latin project.
-Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL..."
-until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER"; do
-  sleep 3
-done
-echo "[DEBUG] PostgreSQL is ready"
+# Wait for PostgreSQL to be ready (only for local development with a containerized DB)
+if [ "$WAIT_FOR_POSTGRES" = "true" ]; then
+  echo "Waiting for PostgreSQL..."
+  until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do
+    sleep 3
+  done
+  echo "[DEBUG] PostgreSQL is ready"
+fi
 
 # This purpose of this section is postgress is ready to accept connections by preloading data
 # This is currently commented out because we are not pre-loading data for now.

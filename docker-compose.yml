@@ -11,30 +11,13 @@ services:
       - ./app:/app
     environment:
       - SESSION_DB_BACKEND=${SESSION_DB_BACKEND}
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_HOST=${DB_HOST}
-      - POSTGRES_PORT=${DB_PORT}
+      - WAIT_FOR_POSTGRES="false
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
       - SKIP_DB=${SKIP_DB}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GOOGLE_ALLOWED_MODELS=${GOOGLE_ALLOWED_MODELS}
       - GOOGLE_API_BASE_URL=${GOOGLE_API_BASE_URL}
-    depends_on:
-      - digital-latin-postgres
-
-  digital-latin-postgres:
-    image: postgres:13
-    container_name: digital-latin-postgres
-    restart: always
-    environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
