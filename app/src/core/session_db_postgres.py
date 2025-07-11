@@ -10,13 +10,30 @@ logging.getLogger(__name__)
 
 def get_conn():
     # Connection info from environment variables (fail early if not set)
-    return psycopg2.connect(
-        dbname=os.environ["DB_NAME"],
-        user=os.environ["DB_USER"],
-        password=os.environ["DB_PASSWORD"], 
-        host=os.environ["DB_HOST"],
-        port=os.environ["DB_PORT"]
-    )
+    try:
+        dbname = os.environ["DB_NAME"]
+        user = os.environ["DB_USER"]
+        password = os.environ["DB_PASSWORD"]
+        host = os.environ["DB_HOST"]
+        port = os.environ["DB_PORT"]
+        # Print first letter of non-secret values for debugging (never print password)
+        print(f"DB_NAME starts with: {dbname[:1]}")
+        print(f"DB_USER starts with: {user[:1]}")
+        print(f"DB_HOST starts with: {host[:1]}")
+        print(f"DB_PORT starts with: {port[:1]}")
+        return psycopg2.connect(
+            dbname=dbname,
+            user=user,
+            password=password, 
+            host=host,
+            port=port
+        )
+    except KeyError as e:
+        print(f"Missing required environment variable: {e}")
+        raise
+    except Exception as e:
+        print(f"Error connecting to PostgreSQL: {e}")
+        raise
 
 def ensure_sessions_table():
     conn = get_conn()
