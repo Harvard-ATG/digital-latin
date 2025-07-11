@@ -9,7 +9,7 @@ services:
       - ./:/app
     environment:
       - SESSION_DB_BACKEND=${SESSION_DB_BACKEND}
-      - WAIT_FOR_POSTGRES="true"
+      - WAIT_FOR_POSTGRES=true
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
