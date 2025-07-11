@@ -1,9 +1,0 @@
-streamlit
-google-genai
-cryptography
-pydantic
-requests
-jinja2
-sentry-sdk
-markdown2
-psycopg2-binary

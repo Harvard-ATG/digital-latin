@@ -1,0 +1,39 @@
+services:
+  digital-latin-streamlit-ui-chatapi:
+    build: .
+    container_name: digital-latin-streamlit-ui-chatapi
+    command: streamlit run src/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0
+    ports:
+      - "8502:8502"
+    volumes:
+      - ./:/app
+    environment:
+      - SESSION_DB_BACKEND=${SESSION_DB_BACKEND}
+      - WAIT_FOR_POSTGRES="true"
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - SKIP_DB=${SKIP_DB}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_ALLOWED_MODELS=${GOOGLE_ALLOWED_MODELS}
+      - GOOGLE_API_BASE_URL=${GOOGLE_API_BASE_URL}
+    depends_on:
+      - digital-latin-postgres
+
+  digital-latin-postgres:
+    image: postgres:13
+    container_name: digital-latin-postgres
+    restart: always
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

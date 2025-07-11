@@ -9,13 +9,13 @@ import logging
 logging.getLogger(__name__)
 
 def get_conn():
-    # Connection info from environment variables
+    # Connection info from environment variables (fail early if not set)
     return psycopg2.connect(
-        dbname=os.getenv("POSTGRES_DB"),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        host=os.getenv("POSTGRES_HOST"),
-        port=os.getenv("POSTGRES_PORT")
+        dbname=os.environ["DB_NAME"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"], 
+        host=os.environ["DB_HOST"],
+        port=os.environ["DB_PORT"]
     )
 
 def ensure_sessions_table():
