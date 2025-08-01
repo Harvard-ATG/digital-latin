@@ -1,0 +1,251 @@
+{
+  "package": {},
+  "code": {
+    "../../tools/prompt_selector_tool.py": {
+      "type": "python",
+      "inputs": {
+        "system_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "user_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "judge_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "judge_user_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "report_id": {
+          "type": [
+            "int"
+          ]
+        }
+      },
+      "description": "Selects the appropriate Jinja template paths and default template variables\nbased on a given prompt identifiers. All arguments are optional, but at least one must be provided.\n\nArgs:\n    system_prompt_id (str, optional): A unique identifier for the desired system prompt.\n    user_prompt_id (str, optional): A unique identifier for the desired user prompt.\n    judge_prompt_id (str, optional): A unique identifier for the desired judge system prompt.\n    judge_user_prompt_id (str, optional): A unique identifier for the desired judge user prompt.\n\nReturns:\n    Dict[str, Any]: A dictionary containing:\n        - 'user_prompt_template_path' (str): Path to the user Jinja template (if user_prompt_id provided).\n        - 'system_prompt_template_path' (str): Path to the system Jinja template (if system_prompt_id provided).\n        - 'judge_prompt_template_path' (str): Path to the judge system Jinja template (if judge_prompt_id provided).\n        - 'judge_user_prompt_template_path' (str): Path to the judge user Jinja template (if judge_user_prompt_id provided).\n        - 'template_variables' (dict): Default variables for the templates.",
+      "source": "../../tools/prompt_selector_tool.py",
+      "function": "prompt_selector"
+    },
+    "nodes/multi_llm_invocation.py": {
+      "type": "python",
+      "inputs": {
+        "user_prompt_template_path": {
+          "type": [
+            "string"
+          ]
+        },
+        "system_prompt_template_path": {
+          "type": [
+            "string"
+          ]
+        },
+        "system_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "user_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "model_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "selector_template_variables": {
+          "type": [
+            "object"
+          ],
+          "default": "{}"
+        },
+        "dynamic_template_variables": {
+          "type": [
+            "object"
+          ],
+          "default": "{}"
+        }
+      },
+      "description": "Invokes the Google Gemini model via the HUIT AI Services API Gateway.\nIt renders Jinja templates for prompts before invoking the LLM.\n\nArgs:\n    user_prompt_template_path (str): Relative path to the Jinja template file for the user prompt.\n    system_prompt_template_path (str): Relative path to the Jinja template file for the system prompt.\n    template_variables (dict): A dictionary of variables to pass to the Jinja templates for rendering.\n    prompt_id (str): A unique identifier for the specific prompt definition/iteration.\n    model_id (str): The specific Gemini model ID (e.g., \"gemini-2.0-flash\").\n    selector_template_variables (dict): Variables from prompt_selector_node\n    dynamic_template_variables (dict): Variables from flow inputs (overrides)\n\nReturns:\n    dict: A dictionary containing the LLM's response and other metadata.\n          Includes the *rendered* prompts used for reporting, and the prompt_id.",
+      "source": "nodes/multi_llm_invocation.py",
+      "function": "invoke_llm"
+    },
+    "../../scripts/generate_report.py": {
+      "type": "python",
+      "inputs": {
+        "system_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "user_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "llm_model_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "system_prompt_used": {
+          "type": [
+            "string"
+          ]
+        },
+        "user_prompt_used": {
+          "type": [
+            "string"
+          ]
+        },
+        "llm_invocation_output": {
+          "type": [
+            "object"
+          ]
+        },
+        "llm_run_time": {
+          "type": [
+            "double"
+          ]
+        },
+        "flow_name": {
+          "type": [
+            "string"
+          ]
+        },
+        "is_rag_flow": {
+          "type": [
+            "bool"
+          ]
+        },
+        "batch_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "test_case_no": {
+          "type": [
+            "int"
+          ]
+        }
+      },
+      "description": "Generates a comprehensive JSON report for a PromptFlow run.\n\nThis function collects detailed information about an LLM invocation within a PromptFlow,\nincluding prompts, model details, invocation outputs, and performance metrics,\nand then saves this data into a sequentially numbered JSON file within a 'results' directory.\n\nArgs:\n    system_prompt_id (str): A unique identifier for the system prompt used in the LLM invocation.\n    user_prompt_id (str): A unique identifier for the user prompt used in the LLM invocation.\n    llm_model_id (str): The identifier of the specific LLM model that was invoked (e.g., 'gpt-4', 'claude-3').\n    system_prompt_used (str): The exact text of the system prompt that was provided as an input to the flow.\n    user_prompt_used (str): The exact text of the user prompt that was provided as an input to the flow.\n    llm_invocation_output (dict): The complete raw output dictionary returned directly from the LLM invocation node.\n                                  This typically includes the LLM's response, token counts, and other metadata.\n    llm_run_time (float): The duration, in seconds, that the LLM took to process the query.\n    flow_name (str): The name of the PromptFlow that executed this LLM invocation.\n    is_rag_flow (bool): A boolean indicating whether this specific flow run involved a Retrieval Augmented Generation (RAG) process.\n    batch_id (str, optional): An optional identifier for the batch run this invocation belongs to. Defaults to None.\n    test_case_no (int, optional): An optional sequential number identifying a specific test case within a batch or test run. Defaults to None.\n\nReturns:\n    dict: A dictionary containing details about the report generation, typically including\n          a 'status' (e.g., 'success', 'failure') and 'report_path' to the generated file.",
+      "source": "../../scripts/generate_report.py",
+      "function": "generate_run_report"
+    },
+    "llm_judge_evaluation_node.py": {
+      "type": "python",
+      "inputs": {
+        "judge_prompt_template_path": {
+          "type": [
+            "string"
+          ]
+        },
+        "judge_user_prompt_template_path": {
+          "type": [
+            "string"
+          ]
+        },
+        "model_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "template_variables": {
+          "type": [
+            "object"
+          ]
+        },
+        "original_llm_results_report_id": {
+          "type": [
+            "int"
+          ]
+        },
+        "original_passage_text": {
+          "type": [
+            "string"
+          ]
+        },
+        "original_llm_response_text": {
+          "type": [
+            "string"
+          ]
+        }
+      },
+      "source": "llm_judge_evaluation_node.py",
+      "function": "evaluate_with_llm"
+    },
+    "../../scripts/generate_evaluation_report.py": {
+      "type": "python",
+      "inputs": {
+        "system_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "user_prompt_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "llm_model_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "system_prompt_used": {
+          "type": [
+            "string"
+          ]
+        },
+        "user_prompt_used": {
+          "type": [
+            "string"
+          ]
+        },
+        "llm_invocation_output": {
+          "type": [
+            "object"
+          ]
+        },
+        "llm_run_time": {
+          "type": [
+            "double"
+          ]
+        },
+        "flow_name": {
+          "type": [
+            "string"
+          ]
+        },
+        "is_rag_flow": {
+          "type": [
+            "bool"
+          ]
+        },
+        "batch_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "test_case_no": {
+          "type": [
+            "int"
+          ]
+        }
+      },
+      "description": "Generates a comprehensive JSON report for a PromptFlow run.\n\nThis function collects detailed information about an LLM invocation within a PromptFlow,\nincluding prompts, model details, invocation outputs, and performance metrics,\nand then saves this data into a sequentially numbered JSON file within a 'results' directory.\n\nArgs:\n    system_prompt_id (str): A unique identifier for the system prompt used in the LLM invocation.\n    user_prompt_id (str): A unique identifier for the user prompt used in the LLM invocation.\n    llm_model_id (str): The identifier of the specific LLM model that was invoked (e.g., 'gpt-4', 'claude-3').\n    system_prompt_used (str): The exact text of the system prompt that was provided as an input to the flow.\n    user_prompt_used (str): The exact text of the user prompt that was provided as an input to the flow.\n    llm_invocation_output (dict): The complete raw output dictionary returned directly from the LLM invocation node.\n                                  This typically includes the LLM's response, token counts, and other metadata.\n    llm_run_time (float): The duration, in seconds, that the LLM took to process the query.\n    flow_name (str): The name of the PromptFlow that executed this LLM invocation.\n    is_rag_flow (bool): A boolean indicating whether this specific flow run involved a Retrieval Augmented Generation (RAG) process.\n    batch_id (str, optional): An optional identifier for the batch run this invocation belongs to. Defaults to None.\n    test_case_no (int, optional): An optional sequential number identifying a specific test case within a batch or test run. Defaults to None.\n\nReturns:\n    dict: A dictionary containing details about the report generation, typically including\n          a 'status' (e.g., 'success', 'failure') and 'report_path' to the generated file.",
+      "source": "../../scripts/generate_evaluation_report.py",
+      "function": "generate_run_report"
+    }
+  }
+}

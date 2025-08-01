@@ -1,0 +1,63 @@
+{
+  "timestamp": "2025-07-07_17-26-21",
+  "evaluation_report_id": 3,
+  "original_report": {
+    "report_id": 149,
+    "system_prompt_id": "S2.3B",
+    "user_prompt_id": "U2.0"
+  },
+  "judge_prompts": {
+    "system_prompt_id": "j2.1",
+    "user_prompt_used": "## Original Passage\n\n\n\nIn maximis meis doloribus excruciat me valetudo Tulliae nostrae, \nde qua nihil est quod ad te plura scribam; tibi enim aeque magnae curae esse certo scio. \nQuod me proprius vultis accedere, video ita esse faciendum. \nEtiam ante fecissem, sed me multa impediverunt, quae ne nunc quidem expedita sunt. \nSed a Pomponio exspecto litteras, quas ad me quam primum perferendas cures velim. \nDa operam, ut valeas.\n\n## Original LLM Response\n\nHere is the simplified passage:\n\nValetudo Tulliae nostrae me valde excruciat in meis maximis doloribus. Non necesse est plura de hac re ad te scribere; scio enim te quoque hanc rem magnopere curare. Quod me propius accedere vultis, video me debere ita facere. Etiam antea id facere volui, sed multae res me impediverunt. Hae res etiam nunc non solutae sunt. Sed a Pomponio epistulam exspecto. Volo te curare hanc epistulam quam primum ad me afferri. Cura, quaeso, valetudinem tuam.\n\nHere is a description of the changes made to the original passage:\n\n**Original:** In maximis meis doloribus excruciat me valetudo Tulliae nostrae,\n**Simplified:** Valetudo Tulliae nostrae me valde excruciat in meis maximis doloribus.\n**Changes:** The original word order was changed to a more standard Subject-Object-Verb order. The simple prepositional phrase `in meis maximis doloribus` was used to replace the original ablative phrase. The high-frequency adverb `valde` was added for emphasis.\n\n**Original:** de qua nihil est quod ad te plura scribam;\n**Simplified:** Non necesse est plura de hac re ad te scribere;\n**Changes:** The relative clause of characteristic, which uses the subjunctive verb `scribam`, was replaced with the simpler `necesse est` followed by the infinitive `scribere`.\n\n**Original:** tibi enim aeque magnae curae esse certo scio.\n**Simplified:** scio enim te quoque hanc rem magnopere curare.\n**Changes:** The double dative construction (`tibi...magnae curae esse`) was eliminated and rephrased as a standard indirect statement with the common verb `curare`.\n\n**Original:** Quod me proprius vultis accedere, video ita esse faciendum.\n**Simplified:** Quod me propius accedere vultis, video me debere ita facere.\n**Changes:** The gerundive of obligation (`ita esse faciendum`) was replaced with the simpler modal verb `debere` followed by the infinitive `facere`.\n\n**Original:** Etiam ante fecissem, sed me multa impediverunt, quae ne nunc quidem expedita sunt.\n**Simplified:** Etiam antea id facere volui, sed multae res me impediverunt. Hae res etiam nunc non solutae sunt.\n**Changes:** The subjunctive verb `fecissem` was replaced with the perfect indicative `volui` plus the infinitive `facere`. The complex sentence was broken into two simpler sentences, and the less common participle `expedita` was replaced with the more common `solutae`.\n\n**Original:** Sed a Pomponio exspecto litteras, quas ad me quam primum perferendas cures velim.\n**Simplified:** Sed a Pomponio epistulam exspecto. Volo te curare hanc epistulam quam primum ad me afferri.\n**Changes:** This complex sentence was broken into two simpler sentences. The subjunctive `velim`, the subjunctive `cures`, and the gerundive `perferendas` were all removed. The request was rephrased using `volo` followed by a construction with two accusatives and a passive infinitive (`te curare hanc epistulam...afferri`). The more specific noun `epistulam` was used instead of `litteras`.\n\n**Original:** Da operam, ut valeas.\n**Simplified:** Cura, quaeso, valetudinem tuam.\n**Changes:** The idiom `Da operam` was replaced with the more common verb `Cura`. The subjunctive clause `ut valeas` was replaced with a direct object, `valetudinem tuam`. The word `quaeso` was added to maintain a polite tone.",
+    "user_prompt_id": "ju1.0"
+  },
+  "model": {
+    "model_id": "gemini-2.5-pro"
+  },
+  "evaluation": {
+    "llm_response": "Content Evaluation: The simplified passage accurately preserves the key ideas and important details of the original passage without adding any extraneous information.\nGrammar Evaluation: The simplified passage correctly follows all grammatical rules, successfully replacing the original's subjunctives, double dative construction, and gerundives with indicative verbs and infinitive constructions.\nVocabulary Evaluation: The simplified passage uses high-frequency vocabulary that is appropriate for the target student level, such as replacing the idiom `da operam` with the more direct `cura`.\nOverall Evaluation: Excellent. The passage is skillfully simplified by breaking down complex sentences and replacing advanced grammatical constructions, making it much more accessible while retaining the original meaning and polite tone.",
+    "token_usage": {
+      "promptTokenCount": 309796,
+      "candidatesTokenCount": 139,
+      "totalTokenCount": 311681,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 309796
+        }
+      ],
+      "thoughtsTokenCount": 1746
+    },
+    "evaluation_latency": 26.753656148910522,
+    "full_api_response": {
+      "candidates": [
+        {
+          "content": {
+            "parts": [
+              {
+                "text": "Content Evaluation: The simplified passage accurately preserves the key ideas and important details of the original passage without adding any extraneous information.\nGrammar Evaluation: The simplified passage correctly follows all grammatical rules, successfully replacing the original's subjunctives, double dative construction, and gerundives with indicative verbs and infinitive constructions.\nVocabulary Evaluation: The simplified passage uses high-frequency vocabulary that is appropriate for the target student level, such as replacing the idiom `da operam` with the more direct `cura`.\nOverall Evaluation: Excellent. The passage is skillfully simplified by breaking down complex sentences and replacing advanced grammatical constructions, making it much more accessible while retaining the original meaning and polite tone."
+              }
+            ],
+            "role": "model"
+          },
+          "finishReason": "STOP",
+          "index": 0
+        }
+      ],
+      "usageMetadata": {
+        "promptTokenCount": 309796,
+        "candidatesTokenCount": 139,
+        "totalTokenCount": 311681,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 309796
+          }
+        ],
+        "thoughtsTokenCount": 1746
+      },
+      "modelVersion": "gemini-2.5-pro",
+      "responseId": "PQNsaN_jIKDm_uMPmqOP6Qk"
+    }
+  }
+}

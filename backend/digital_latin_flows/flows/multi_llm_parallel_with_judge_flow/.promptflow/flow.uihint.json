@@ -1,0 +1,19 @@
+{
+  "nodes": {
+    "prompt_selector_tool": {
+      "variant_0": {
+        "inputs": {
+          "judge_prompt_id": [],
+          "report_id": []
+        }
+      }
+    },
+    "llm_judge_evaluation_node": {
+      "variant_0": {
+        "inputs": {
+          "judge_prompt_template_path": []
+        }
+      }
+    }
+  }
+}

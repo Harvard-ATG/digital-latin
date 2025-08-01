@@ -1,0 +1,63 @@
+{
+  "timestamp": "2025-07-07_17-25-18",
+  "evaluation_report_id": 2,
+  "original_report": {
+    "report_id": 148,
+    "system_prompt_id": "S1.3B",
+    "user_prompt_id": "U2.0"
+  },
+  "judge_prompts": {
+    "system_prompt_id": "j1.1",
+    "user_prompt_used": "## Original Passage\n\n\n\nIn maximis meis doloribus excruciat me valetudo Tulliae nostrae, \nde qua nihil est quod ad te plura scribam; tibi enim aeque magnae curae esse certo scio. \nQuod me proprius vultis accedere, video ita esse faciendum. \nEtiam ante fecissem, sed me multa impediverunt, quae ne nunc quidem expedita sunt. \nSed a Pomponio exspecto litteras, quas ad me quam primum perferendas cures velim. \nDa operam, ut valeas.\n\n## Original LLM Response\n\nHere is the simplified passage:\n\nValetudo Tulliae nostrae me valde vexat in meis maximis doloribus. Non necesse est plura de ea ad te scribere. Nam certo scio: valetudo eius est quoque tua magna cura. Tu vis me propius accedere. Video: hoc facere debeo. Hoc facere etiam ante volui, sed multa me impediverunt. Illae res etiam nunc non sunt paratae. Sed litteras a Pomponio exspecto. Quaeso, mitte illas litteras ad me quam primum. Cura tuam valetudinem.\n\n***\n\n**Original:** In maximis meis doloribus excruciat me valetudo Tulliae nostrae, de qua nihil est quod ad te plura scribam; tibi enim aeque magnae curae esse certo scio.\n**Simplified:** Valetudo Tulliae nostrae me valde vexat in meis maximis doloribus. Non necesse est plura de ea ad te scribere. Nam certo scio: valetudo eius est quoque tua magna cura.\n**Changes:**\n- The original long sentence was broken into three shorter, simpler sentences to improve readability.\n- The subjunctive verb in the relative clause of characteristic, `scribam`, was replaced with the infinitive `scribere` in the common construction `necesse est`.\n- The indirect statement `tibi...esse...scio` was simplified into a direct statement introduced by `scio:`.\n- The double dative construction, `tibi...magnae curae`, was replaced with a standard predicate nominative using a possessive adjective, `tua magna cura`.\n\n**Original:** Quod me proprius vultis accedere, video ita esse faciendum.\n**Simplified:** Tu vis me propius accedere. Video: hoc facere debeo.\n**Changes:**\n- The sentence was split into two separate statements.\n- The substantive clause beginning with `Quod` was rephrased as a simple main clause. The plural verb `vultis` was changed to the singular `vis` to directly address the recipient.\n- The indirect statement `video ita esse faciendum`, which contains a gerundive of obligation, was replaced with a direct statement, `Video: hoc facere debeo`, using `debeo` + infinitive to express necessity.\n\n**Original:** Etiam ante fecissem, sed me multa impediverunt, quae ne nunc quidem expedita sunt.\n**Simplified:** Hoc facere etiam ante volui, sed multa me impediverunt. Illae res etiam nunc non sunt paratae.\n**Changes:**\n- The pluperfect subjunctive verb `fecissem`, used in an implied past contrary-to-fact condition, was replaced with the simple perfect indicative `volui` to express a past wish.\n- The sentence was split into two, and the relative clause beginning with `quae` was rewritten as an independent sentence using the demonstrative `Illae res`.\n- The perfect passive participle `expedita sunt` was replaced with the simple predicate adjective `paratae`.\n\n**Original:** Sed a Pomponio exspecto litteras, quas ad me quam primum perferendas cures velim.\n**Simplified:** Sed litteras a Pomponio exspecto. Quaeso, mitte illas litteras ad me quam primum.\n**Changes:**\n- The complex sentence was divided into two simple sentences.\n- The complex clause of desire containing a subjunctive and a gerundive (`quas...perferendas cures velim`) was replaced with a simple imperative command, `mitte`, and the parenthetical `quaeso`.\n\n**Original:** Da operam, ut valeas.\n**Simplified:** Cura tuam valetudinem.\n**Changes:**\n- The idiom `Da operam` (\"take pains\") and the purpose clause with the subjunctive (`ut valeas`) were replaced by the simple imperative `Cura` followed by a direct object, `tuam valetudinem`.",
+    "user_prompt_id": "ju1.0"
+  },
+  "model": {
+    "model_id": "gemini-2.5-pro"
+  },
+  "evaluation": {
+    "llm_response": "Content Evaluation: The simplified passage accurately reflects the key ideas and important details of the original passage without adding new information.\nGrammar Evaluation: The simplified passage correctly adheres to all grammatical rules, successfully replacing structures such as the double dative, indirect statements, subjunctive verbs, and a gerundive with simpler constructions.\nVocabulary Evaluation: The vocabulary is mostly appropriate, though `valetudo` is less common than the alternative `salus`, which appears on the provided vocabulary list.\nOverall Evaluation: Excellent. The passage is skillfully simplified by breaking down complex sentences and replacing advanced grammatical structures with more direct constructions, making it highly accessible while retaining the original's meaning.",
+    "token_usage": {
+      "promptTokenCount": 309809,
+      "candidatesTokenCount": 135,
+      "totalTokenCount": 312250,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 309809
+        }
+      ],
+      "thoughtsTokenCount": 2306
+    },
+    "evaluation_latency": 36.35983324050903,
+    "full_api_response": {
+      "candidates": [
+        {
+          "content": {
+            "parts": [
+              {
+                "text": "Content Evaluation: The simplified passage accurately reflects the key ideas and important details of the original passage without adding new information.\nGrammar Evaluation: The simplified passage correctly adheres to all grammatical rules, successfully replacing structures such as the double dative, indirect statements, subjunctive verbs, and a gerundive with simpler constructions.\nVocabulary Evaluation: The vocabulary is mostly appropriate, though `valetudo` is less common than the alternative `salus`, which appears on the provided vocabulary list.\nOverall Evaluation: Excellent. The passage is skillfully simplified by breaking down complex sentences and replacing advanced grammatical structures with more direct constructions, making it highly accessible while retaining the original's meaning."
+              }
+            ],
+            "role": "model"
+          },
+          "finishReason": "STOP",
+          "index": 0
+        }
+      ],
+      "usageMetadata": {
+        "promptTokenCount": 309809,
+        "candidatesTokenCount": 135,
+        "totalTokenCount": 312250,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 309809
+          }
+        ],
+        "thoughtsTokenCount": 2306
+      },
+      "modelVersion": "gemini-2.5-pro",
+      "responseId": "_gJsaKiHNoeo1MkPipLO2Aw"
+    }
+  }
+}
