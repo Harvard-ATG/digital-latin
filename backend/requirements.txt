@@ -1,5 +1,5 @@
 # This would be used if you're setting up the environment for the entire solution.
-promptflow
+promptflow==1.18.1
 promptflow-sdk
 promptflow-tools
 boto3

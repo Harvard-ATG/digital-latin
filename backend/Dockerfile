@@ -52,6 +52,9 @@ RUN conda create -n promptflow-serve python=3.9.16 pip=23.0.1 -q -y && \
     conda run -n promptflow-serve pip cache purge && \
     conda clean -a -y
 
+RUN echo "import os" | cat - /opt/conda/envs/promptflow-serve/lib/python3.9/site-packages/promptflow/core/_serving/v1/blueprint/static_web_blueprint.py > temp && \
+mv temp /opt/conda/envs/promptflow-serve/lib/python3.9/site-packages/promptflow/core/_serving/v1/blueprint/static_web_blueprint.py
+
 # # This docker file needs the flow to be in a certain area, so I could theorectically have the first par tpoint to where ever i wnat
 ## But what is around that flow has to be in the working directory also has to work well.
 ## So in this case we really need to copy everything in the working directory to the docker image, and that working directory would be 
