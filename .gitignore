@@ -1,16 +1,17 @@
-**/.env*
-**/.venv*
-**/venv/*
+.env
+**/.env
+**/.venv
+**/venv/
 __pycache__/
 # .notes*
 streamlit-ui.code-workspace
 .DS_Store
 **/.promptflow/
-/backend/.env
-**/.pnotes/*
+**/.pnotes/
+.promptflow/
+.DS_Store
 
 # Python bytecode (auto-generated, not meant for version control)
-__pycache__/
 *.pyc
 
 # PromptFlow's internal metadata/cache for flows
@@ -30,3 +31,5 @@ digital_latin_project/flows/**/.promptflow/
 # Example: If we later decide to ignore *all* JSON results, but still keep logs and reports:
 # digital_latin_project/results/*.json
 # digital_latin_project/prepared_reports/*.json
+backend/__pycache__
+/backeend/__pycache__
