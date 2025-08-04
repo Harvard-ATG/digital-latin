@@ -10,6 +10,7 @@ streamlit-ui.code-workspace
 **/.pnotes/
 .promptflow/
 .DS_Store
+**/.DS_Store
 
 # Python bytecode (auto-generated, not meant for version control)
 *.pyc
