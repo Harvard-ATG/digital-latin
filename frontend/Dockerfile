@@ -15,6 +15,9 @@ COPY /frontend/entrypoint.sh ./entrypoint.sh
 # This is necessary for the Streamlit app to connect to the PostgreSQL database.
 # Needed for pg_ready
 RUN apt-get update && apt-get install -y postgresql-client
-RUN chmod +x ./entrypoint.sh
 
 EXPOSE 8502
+
+RUN chmod +x ./entrypoint.sh
+
+CMD ["bash", "./entrypoint.sh"]
