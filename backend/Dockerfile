@@ -81,5 +81,8 @@ COPY backend/runit /var/runit
 # grant permission
 RUN chmod -R +x /var/runit
 
-COPY backend/start.sh /
+COPY backend/start.sh ./start.sh
+
+RUN chmod +x ./start.sh
+
 CMD ["bash", "./start.sh"]
