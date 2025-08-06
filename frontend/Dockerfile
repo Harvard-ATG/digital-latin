@@ -3,14 +3,17 @@ FROM python:3.11-slim
 
 WORKDIR /
 
-COPY requirements.txt .
+COPY /frontend/requirements.txt .
 
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
-COPY /app ./app/
+COPY /frontend/app ./app/
 
-COPY entrypoint.sh ./entrypoint.sh
+COPY /frontend/entrypoint.sh ./entrypoint.sh
+# Install PostgreSQL client for database interactions.
+# This is necessary for the Streamlit app to connect to the PostgreSQL database.
+# Needed for pg_ready
 RUN apt-get update && apt-get install -y postgresql-client
 RUN chmod +x ./entrypoint.sh
 

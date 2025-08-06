@@ -1,8 +1,8 @@
 services:
   digital-latin-streamlit-ui-chatapi:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: frontend/Dockerfile
     container_name: digital-latin-streamlit-ui-chatapi
     command: ["bash", "./entrypoint.sh"]
     ports:
