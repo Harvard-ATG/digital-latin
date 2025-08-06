@@ -1,12 +1,14 @@
 services:
   digital-latin-streamlit-ui-chatapi:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: digital-latin-streamlit-ui-chatapi
-    command: streamlit run src/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0
+    command: ["bash", "./entrypoint.sh"]
     ports:
       - "8502:8502"
     volumes:
-      - ./:/app
+      - ./app:/app
     environment:
       - SESSION_DB_BACKEND=${SESSION_DB_BACKEND}
       - WAIT_FOR_POSTGRES=true
@@ -27,9 +29,9 @@ services:
     container_name: digital-latin-postgres
     restart: always
     environment:
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:

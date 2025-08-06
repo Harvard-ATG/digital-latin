@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: digital-latin-streamlit-ui-chatapi
-    command: streamlit run src/core/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0
+    command: ["bash", "./entrypoint.sh"]
     ports:
       - "8502:8502"
     volumes:
