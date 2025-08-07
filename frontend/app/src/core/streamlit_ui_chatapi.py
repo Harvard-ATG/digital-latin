@@ -12,6 +12,7 @@ import re
 import streamlit as st
 from pathlib import Path
 from gemini_pipeline import GeminiPipeline as Pipe
+from flow_api_endpoint import call_flow_score_endpoint, convert_chat_messages_to_chat_history
 from datetime import datetime
 from jinja2 import Template
 
@@ -68,6 +69,26 @@ except Exception as e:
 # Load environment variables handled in docker-compose, no need to load here.
 
 SKIP_DB = os.getenv("SKIP_DB", "false").lower() == "true"
+
+# --- AUTHENTICATION ---
+def check_auth():
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    authenticated_users = {
+        os.environ["AUTH_USER_1"]: os.environ["AUTH_PASSWORD_1"],
+        os.environ["AUTH_USER_2"]: os.environ["AUTH_PASSWORD_2"],
+        os.environ["AUTH_USER_3"]: os.environ["AUTH_PASSWORD_3"],
+    }
+    if st.button("Login"):
+        if username in authenticated_users.keys() and password == authenticated_users[username]:
+            st.session_state["authenticated"] = True
+        else:
+            st.error("Invalid username or password")
+
+if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+    st.title("Login")
+    check_auth()
+    st.stop()
 
 if st.session_state.get("clear_chat_input", False):
     st.session_state["chat_input_text"] = ""
@@ -191,6 +212,7 @@ with st.sidebar:
         if session_db_id:
             session_db.save_session(session_title, dict(st.session_state), session_db_id=session_db_id, end_reason="new session started", skip_db=SKIP_DB)
         st.session_state.clear()
+        st.session_state["authenticated"] = True
         st.rerun()
     # Style the sidebar New Session button to be dark grey with white text
     # st.markdown("""
@@ -334,8 +356,16 @@ if st.session_state.get("llm_busy", False) and st.session_state.get("should_call
             messages = [{"role": "system", "content": system_prompt}] + [
                 m for m in st.session_state["chat_messages"]
             ]
-            response_content = asyncio.run(pipe.pipe({"model": selected_model, "messages": messages}, {}, lambda x: None, {}))
-            # Only append if not already present as the last assistant message
+
+            # response_content = asyncio.run(pipe.pipe({"model": selected_model, "messages": messages}, {}, lambda x: None, {}))
+            # # Only append if not already present as the last assistant message
+
+            response_content = call_flow_score_endpoint(
+                chat_history=convert_chat_messages_to_chat_history(messages),
+                level=current_level,
+                llm_model_id=selected_model,
+            )
+
             if not (
                 st.session_state["chat_messages"]
                 and st.session_state["chat_messages"][-1]["role"] == "assistant"
