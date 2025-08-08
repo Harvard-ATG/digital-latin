@@ -1,8 +1,8 @@
 services:
   digital-latin-streamlit-ui-chatapi:
     build:
-      context: ..
-      dockerfile: frontend/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: digital-latin-streamlit-ui-chatapi
     command: ["bash", "./entrypoint.sh"]
     ports:
@@ -10,6 +10,7 @@ services:
     volumes:
       - ./app:/app
     environment:
+    # These environment variables are used to configure the Streamlit app and its dependencies.
       - SESSION_DB_BACKEND=${SESSION_DB_BACKEND}
       - WAIT_FOR_POSTGRES=true
       - DB_NAME=${DB_NAME}
@@ -22,8 +23,6 @@ services:
       - GOOGLE_ALLOWED_MODELS=${GOOGLE_ALLOWED_MODELS}
       - GOOGLE_API_BASE_URL=${GOOGLE_API_BASE_URL}
       - FLOW_API_URL=${FLOW_API_URL}
-      - STREAMLIT_AUTH_USERNAME=${STREAMLIT_AUTH_USERNAME}
-      - STREAMLIT_AUTH_PASSWORD=${STREAMLIT_AUTH_PASSWORD}
       - AUTH_USER_1=${AUTH_USER_1}
       - AUTH_PASSWORD_1=${AUTH_PASSWORD_1}
       - AUTH_USER_2=${AUTH_USER_2}

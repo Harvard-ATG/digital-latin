@@ -28,6 +28,6 @@ docker-compose -f backend/docker-compose.yml up -d
 
 # Start frontend services
 echo "Starting frontend services..."
-docker-compose -f frontend/docker-compose.local.yml up -d
+docker-compose -f docker-compose.local.yml up -d
 
 echo "All services are running."
