@@ -17,10 +17,10 @@ def get_conn():
         user = os.environ["DB_USER"]
         password = os.environ["DB_PASSWORD"]
         # Print first letter of non-secret values for debugging (never print password)
-        logging.debug(f"DB_NAME starts with: {dbname[:1]}")
-        logging.debug(f"DB_USER starts with: {user[:1]}")
-        logging.debug(f"DB_HOST starts with: {host}")
-        logging.debug(f"DB_PORT starts with: {port}")
+        # logging.debug(f"DB_NAME starts with: {dbname[:1]}")
+        # logging.debug(f"DB_USER starts with: {user[:1]}")
+        # logging.debug(f"DB_HOST starts with: {host}")
+        # logging.debug(f"DB_PORT starts with: {port}")
         return psycopg2.connect(
             dbname=dbname,
             user=user,

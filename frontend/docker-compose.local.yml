@@ -32,6 +32,8 @@ services:
       - AUTH_PASSWORD_3=${AUTH_PASSWORD_3}
     depends_on:
       - digital-latin-postgres
+    networks:
+      - digital-latin-shared-network
 
   digital-latin-postgres:
     image: postgres:13
@@ -45,6 +47,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - digital-latin-shared-network
 
 volumes:
   pgdata:
+
+networks:
+  digital-latin-shared-network:
+    external: true

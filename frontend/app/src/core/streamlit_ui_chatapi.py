@@ -360,21 +360,25 @@ if st.session_state.get("llm_busy", False) and st.session_state.get("should_call
             # response_content = asyncio.run(pipe.pipe({"model": selected_model, "messages": messages}, {}, lambda x: None, {}))
             # # Only append if not already present as the last assistant message
 
+            logger.debug(f"Attempt to call /score endpoint with model: {selected_model}, level: {current_level}")
             response_content = call_flow_score_endpoint(
                 chat_history=convert_chat_messages_to_chat_history(messages),
                 level=current_level,
                 llm_model_id=selected_model,
             )
+            logger.debug(f"Response from /score endpoint: {response_content}")
 
+            # No duplicate check for the last assistant message - Check if the last message is an assistant
+            # response with the same content
             if not (
                 st.session_state["chat_messages"]
                 and st.session_state["chat_messages"][-1]["role"] == "assistant"
-                and st.session_state["chat_messages"][-1]["content"].strip() == response_content.strip()
+                and st.session_state["chat_messages"][-1]["content"].strip() == response_content["content"].strip()
             ):
-                st.session_state["chat_messages"].append({"role": "assistant", "content": response_content})
+                st.session_state["chat_messages"].append(response_content)
                 session_db_id = st.session_state.get("session_db_id")
                 if session_db_id:
-                    session_db.log_message(session_db_id, "assistant", response_content)
+                    session_db.log_message(session_db_id, "assistant", response_content["content"])
             else:
                 # Session title generation (do NOT append to chat history)
                 pass
@@ -531,7 +535,14 @@ if session_title:
 seen = set()
 deduped = []
 for msg in st.session_state["chat_messages"]:
-    msg_id = (msg.get("role"), msg.get("content"))
+    role = msg.get("role")
+    content = msg.get("content")
+    # Safely convert content to a string for hashing
+    if isinstance(content, dict):
+        content_str = json.dumps(content, sort_keys=True)
+    else:
+        content_str = str(content)
+    msg_id = (role, content_str)
     if msg_id not in seen:
         seen.add(msg_id)
         deduped.append(msg)

@@ -43,6 +43,7 @@ def call_flow_score_endpoint(
         "system_prompt_id": get_system_prompt_id(level),
         "chat_history": chat_history
     }
+    logging.debug(f"FAE: Calling /score endpoint with payload: {payload}")
     headers = {"Content-Type": "application/json"}
     max_retries = 1  # Only one retry (total 2 attempts) to avoid excessive retries given long response times
     # Retry logic to handle potential timeouts or transient errors
@@ -55,11 +56,16 @@ def call_flow_score_endpoint(
     attempt = 0
     while attempt <= max_retries:
         try:
-            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            response = requests.post(api_url, json=payload, headers=headers, timeout=120)
             response.raise_for_status()
-            return response.json()
+            response_data = response.json()
+            streamlit_response = convert_score_response_to_streamlit_message(response_data)
+            logging.debug(f"FAE: Received response from /score endpoint: {response_data}")
+            logging.debug(f"FAE: Converted response for Streamlit: {streamlit_response}")   
+            return streamlit_response
         except requests.RequestException as e:
             if attempt == max_retries:
+                logging.error(f"FAE: Failed to call /score endpoint after {max_retries + 1} attempts: {e}")
                 raise e  # Raise the actual error to be caught by Streamlit logic
             attempt += 1
 
@@ -80,6 +86,17 @@ def convert_chat_messages_to_chat_history(messages):
                 "parts": [{"text": m["content"]}]
             })
     return chat_history
+
+def convert_score_response_to_streamlit_message(response_data, role="assistant"):
+    """
+    Convert the /score API response (JSON or raw text) to a Streamlit chat message dict.
+    If response_data is a dict with 'response_text' as a string, use that; else fallback to str(response_data).
+    """
+    if isinstance(response_data, dict) and isinstance(response_data.get("response_text"), str):
+        content = response_data["response_text"]
+    else:
+        content = str(response_data)
+    return {"role": role, "content": content}
 
 # Example usage (for testing, remove in production):
 if __name__ == "__main__":

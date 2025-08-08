@@ -15,4 +15,9 @@ services:
       - GEMINI_BASE_URL=${GEMINI_BASE_URL}
       - PYTHON_KEYRING_BACKEND=${PYTHON_KEYRING_BACKEND}
       - KEYRING_CRYPTFILE_PASSWORD=${KEYRING_CRYPTFILE_PASSWORD}
+    networks:
+      - digital-latin-shared-network
 
+networks:
+  digital-latin-shared-network:
+    external: true
