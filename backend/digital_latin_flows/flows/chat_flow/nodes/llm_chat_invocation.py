@@ -56,10 +56,9 @@ def invoke_llm(
     It renders Jinja templates for prompts before invoking the LLM.
 
     Args:
-        user_prompt_template_path (str): Relative path to the Jinja template file for the user prompt.
+        chat_history (list): A list of chat messages in the format expected by the LLM.
         system_prompt_template_path (str): Relative path to the Jinja template file for the system prompt.
-        template_variables (dict): A dictionary of variables to pass to the Jinja templates for rendering.
-        prompt_id (str): A unique identifier for the specific prompt definition/iteration.
+        system_prompt_id (str): A unique identifier for the system prompt definition/iteration.
         model_id (str): The specific Gemini model ID (e.g., "gemini-2.0-flash").
         selector_template_variables (dict): Variables from prompt_selector_node
         dynamic_template_variables (dict): Variables from flow inputs (overrides)
