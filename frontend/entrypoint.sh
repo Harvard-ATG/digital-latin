@@ -4,8 +4,8 @@ set -e
 echo "[DEBUG] Entrypoint script started"
 echo "[DEBUG] Current user: $(whoami)"
 echo "[DEBUG] Current directory: $(pwd)"
-echo "[DEBUG] Listing files in /app:"
-ls -l /app
+# echo "[DEBUG] Listing files in /app:"
+# ls -l /app
 echo "[DEBUG] Environment variables:"
 env
 
@@ -28,4 +28,4 @@ fi
 
 echo "[DEBUG] Starting Streamlit..."
 # Start Streamlit app
-exec streamlit run /frontend/app/src/core/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0
+exec streamlit run /app/src/core/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0

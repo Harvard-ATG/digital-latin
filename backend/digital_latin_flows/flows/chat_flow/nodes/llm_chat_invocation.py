@@ -217,6 +217,8 @@ def invoke_llm(
                 raise ValueError("Base URL not found in the Gemini connection.")
 
             api_endpoint = f"{base_url}/v1beta/models/gemini-2.5-pro:generateContent"
+            
+            print(f"Chat History: {chat_history}", file=sys.stderr)
 
             payload = {
                 # "contents": [  # Only user messages (and interleaved model messages) go here

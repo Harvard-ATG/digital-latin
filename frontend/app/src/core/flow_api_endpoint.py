@@ -80,9 +80,14 @@ def convert_chat_messages_to_chat_history(messages):
     """
     chat_history = []
     for m in messages:
-        if m["role"] in ("user", "assistant"):
+        if m["role"] == "user":
             chat_history.append({
                 "role": m["role"],
+                "parts": [{"text": m["content"]}]
+            })
+        if m["role"] == "assistant":
+            chat_history.append({
+                "role": "model",
                 "parts": [{"text": m["content"]}]
             })
     return chat_history

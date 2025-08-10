@@ -3,7 +3,6 @@ FROM docker.io/continuumio/miniconda3:latest
 
 WORKDIR /
 
-
 # gcc is for build psutil in MacOS
 RUN apt-get update && apt-get install -y runit gcc
 
@@ -40,7 +39,7 @@ RUN apt-get update && apt-get install -y runit gcc
 #     conda clean -a -y
 # --- 
 
-COPY /backend/requirements.txt .
+COPY backend/requirements.txt .
 
 RUN conda create -n promptflow-serve python=3.9.16 pip=23.0.1 -q -y && \
     conda run -n promptflow-serve \
@@ -63,7 +62,7 @@ mv temp /opt/conda/envs/promptflow-serve/lib/python3.9/site-packages/promptflow/
 
 # -- WAS ORIGINAL, BUT I THINK IT IS BETTER TO COPY THE DIGITAL LATIN FLOWS, SO IGNORED THIS LINE
 # COPY ./flow /flow
-COPY . /backend /backend/
+COPY backend /backend/
 
 # The following line is to make sure that the python path is set correctly and includes the digital_latin_flows and _connections_manager_ directories.
 ENV PYTHONPATH='${PYTHONPATH}:/backend'
