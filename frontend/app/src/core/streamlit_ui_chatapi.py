@@ -11,7 +11,7 @@ import traceback
 import re
 import streamlit as st
 from pathlib import Path
-from gemini_pipeline import GeminiPipeline as Pipe
+# from gemini_pipeline import GeminiPipeline as Pipe
 from flow_api_endpoint import call_flow_score_endpoint, convert_chat_messages_to_chat_history
 from datetime import datetime
 from jinja2 import Template
@@ -96,14 +96,14 @@ if st.session_state.get("clear_chat_input", False):
 
 # Initialize the Gemini pipeline wrapper
 # WHY: Encapsulates LLM API logic and allows for easy swapping or extension of model backends.
-try:
-    logger.debug("Initializing GeminiPipeline...")
-    pipe = Pipe(input_data={})
-    logger.debug("GeminiPipeline initialized successfully.")
-except Exception as e:
-    logger.debug(f"Exception during GeminiPipeline initialization: {e}")
-    traceback.print_exc()
-    pipe = None
+# try:
+#     logger.debug("No Gemini Pipeline To Initialize...")
+#     pipe = Pipe(input_data={})
+#     logger.debug("GeminiPipeline initialized successfully.")
+# except Exception as e:
+#     logger.debug(f"Exception during GeminiPipeline initialization: {e}")
+#     traceback.print_exc()
+#     pipe = None
 
 # Set up prompt template paths
 # WHY: Prompts are stored as Jinja2 templates for easy editing and reuse. This allows for level-specific instructions.
