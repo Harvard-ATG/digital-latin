@@ -6,8 +6,8 @@ logging.getLogger(__name__)
 
 # Mapping for level selection to system prompt code
 LEVEL_TO_SYSTEM_PROMPT_ID = {
-    "Level I": "S1.3C",
-    "Level II": "S2.3C"
+    "Level I": "S1.3B",
+    "Level II": "S2.3B"
 }
 
 def get_system_prompt_id(level: str) -> str:
