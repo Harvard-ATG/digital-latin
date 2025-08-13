@@ -37,7 +37,7 @@ Prod URL: https://digital-latin.tlt.harvard.edu
 
 3. **Start all services**:
    ```bash
-   docker-compose -f docker-compose.local.yml up --build
+   docker-compose -f docker-compose.yml up --build
    ```
 
 4. **Access the app**: http://localhost:8502
@@ -90,7 +90,7 @@ digital-latin/
 │   ├── Dockerfile              # Backend container
 │   └── start.sh                # Service startup script
 ├── .env.example                # Environment template
-├── docker-compose.local.yml    # Local development
+├── docker-compose.yml    # Local development
 └── user_guide.md               # End-user documentation
 ```
 
@@ -123,10 +123,10 @@ See `.env.example` for all configuration options and detailed explanations.
 
 ```bash
 # Start all services
-docker-compose -f docker-compose.local.yml up --build
+docker-compose -f docker-compose.yml up --build
 
 # Start in background
-docker-compose -f docker-compose.local.yml up -d --build
+docker-compose -f docker-compose.yml up -d --build
 
 # View logs for specific service
 docker-compose logs digital-latin-streamlit-ui-chatapi
@@ -140,10 +140,10 @@ docker-compose logs -f
 docker-compose build digital-latin-flow
 
 # Stop all services
-docker-compose -f docker-compose.local.yml down
+docker-compose -f docker-compose.yml down
 
 # Stop and remove volumes (clears database)
-docker-compose -f docker-compose.local.yml down -v
+docker-compose -f docker-compose.yml down -v
 ```
 </details>
 
