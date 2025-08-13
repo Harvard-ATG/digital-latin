@@ -11,7 +11,6 @@ import traceback
 import re
 import streamlit as st
 from pathlib import Path
-# from gemini_pipeline import GeminiPipeline as Pipe
 from flow_api_endpoint import call_flow_score_endpoint, convert_chat_messages_to_chat_history
 from datetime import datetime
 from jinja2 import Template
@@ -48,26 +47,6 @@ try:
 except Exception as e:
     logger.debug(f"Exception during DB setup: {e}")
 
-## TODO: 
-# - Possibly - Mount EFS for data storage.
-    # - Swap out sql lite to postgres database (we already have a shared rds instance, we could create a new database in there.)
-    ## - If postgress is not easy, then we will go with a SQLite DB, and work to set up an EFS mount for data storage.****
-    ## - DB exists and path. IF DB exist, more complicated than manual. Matter of principle often kept DB funcationalitiy out of side, since life cycles are different, if there is osmethign likekthat there is db. python script.
-    ## - Can that be optionally turned off, or turned on.  That might be a bit of a blocker. Enable or not enable it, if we have to demo without that. 
-    ## - Feature flag.
-# - Envionment varaibles - Add to param store, when it defines task definition - tathat ask should be provided with tehse environmnt varaiblels - and that is defined in params.
-# - It will pull dynamically from parameter store. Terraform.
-    # - We could also stream interactions into cloud like logs, particularly if structured in usefulway.
-# - Make the size of the text-box larger (done)
-# - Chat's should automatically save at first user message. (done)
-# - Remove past sessiosn from the sidebar. (done)
-# - Disable level selection after the selection and make the level appear somewhere on the UI. (done)
-# - Have a button that says new sesssion, this will clear the chat history and allow the user to start a new session. (done)
-# - We will use 3A with link references only, not 3B. Add 3B if possible.
-# - Sentury integration (done)
-
-# Load environment variables handled in docker-compose, no need to load here.
-
 SKIP_DB = os.getenv("SKIP_DB", "false").lower() == "true"
 
 # --- AUTHENTICATION ---
@@ -93,31 +72,6 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
 if st.session_state.get("clear_chat_input", False):
     st.session_state["chat_input_text"] = ""
     st.session_state["clear_chat_input"] = False
-
-# Initialize the Gemini pipeline wrapper
-# WHY: Encapsulates LLM API logic and allows for easy swapping or extension of model backends.
-# try:
-#     logger.debug("No Gemini Pipeline To Initialize...")
-#     pipe = Pipe(input_data={})
-#     logger.debug("GeminiPipeline initialized successfully.")
-# except Exception as e:
-#     logger.debug(f"Exception during GeminiPipeline initialization: {e}")
-#     traceback.print_exc()
-#     pipe = None
-
-# Set up prompt template paths
-# WHY: Prompts are stored as Jinja2 templates for easy editing and reuse. This allows for level-specific instructions.
-PROMPTS_DIR = Path(__file__).parent.parent.parent / "prompts"
-LEVEL_1_PROMPT_JINJA = next(PROMPTS_DIR.glob("*level1*.jinja*"), None)
-LEVEL_2_PROMPT_JINJA = next(PROMPTS_DIR.glob("*level2*.jinja*"), None)
-
-def render_jinja_prompt(jinja_path, context=None):
-    # WHY: Allows dynamic rendering of prompt templates with context variables.
-    rendered_prompt = ""
-    if jinja_path and jinja_path.exists():
-        template = Template(jinja_path.read_text())
-        rendered_prompt = template.render(context or {})
-    return rendered_prompt
 
 # --- GLOBAL SESSION STATE INITIALIZATION & PENDING LOAD HANDLING ---
 
@@ -145,32 +99,6 @@ if "should_call_llm" not in st.session_state:
 # Before rendering the input area, set llm_busy flag
 if "llm_busy" not in st.session_state:
     st.session_state.llm_busy = False
-
-
-# Process any pending session load data
-# if "_pending_session_load_data" in st.session_state:
-#     print("DEBUG: Processing _pending_session_load_data at script start.")
-#     session_data_to_load = st.session_state.pop("_pending_session_load_data") # Get and remove the data
-#     session_id_to_load = st.session_state.pop("_pending_session_load_id") # Get the session ID
-
-#     # Clear relevant parts of session_state *before* applying loaded data
-#     # Be careful not to clear internal streamlit keys or keys from widgets not yet rendered
-#     keys_to_clear_before_load = ["chat_messages", "session_title", "system_prompt"]
-#     for k in keys_to_clear_before_load:
-#         if k in st.session_state:
-#             del st.session_state[k]
-
-#     # Apply all loaded data to st.session_state
-#     for k, v in session_data_to_load.items():
-#         st.session_state[k] = v
-
-#     # Ensure should_call_llm is false after a load
-#     st.session_state.should_call_llm = False
-#     st.session_state["session_db_id"] = session_id_to_load
-#     st.session_state["_rerun_from_load"] = True # Keep this flag for final rerun check
-#     print(f"DEBUG: Loaded session data applied. New session_db_id: {st.session_state['session_db_id']}")
-    # No st.rerun() here, as the script will naturally continue and widgets will use these new values.
-
 
 # --- DB BACKEND SELECTION ---
 # WHY: For now, default to PostgreSQL and deactivate the backend selector. To re-enable SQLite, uncomment the selector below.
@@ -232,9 +160,8 @@ with st.sidebar:
     st.markdown(
         "Simplify authentic Latin passages for your students using AI.  \n\n"
         "Choose a simplification level to match your students' experience:  \n"
-        "* **Level I** for first-year.  \n"
-        "* **Level II** for second-year Latin.  \n\n"
-        # "Manage and review your past simplification sessions below."
+        "* **Level 1** for first-year.  \n"
+        "* **Level 2** for second-year Latin.  \n\n"
     )
     st.markdown("---")
     st.header("Settings")
@@ -251,10 +178,10 @@ with st.sidebar:
     # WHY: These selectboxes are bound to session_state so that loading a session or changing a setting updates the UI and logic everywhere.
     # Removed the selectbox for model selection from the sidebar UI.
     # Level selection: no default, starts with placeholder, only enabled if not already selected for this session.
-    level_options = ["Select a level", "Level I", "Level II"]
+    level_options = ["Select a level", "Level 1", "Level 2"]
     level_selected = st.session_state.get("level_selected", False)
     current_level = st.session_state.get("level_chatapi", "Select a level")
-    level_disabled = level_selected and current_level in ["Level I", "Level II"]
+    level_disabled = level_selected and current_level in ["Level 1", "Level 2"]
     level = st.selectbox(
         "Select Level",
         level_options,
@@ -263,7 +190,7 @@ with st.sidebar:
         disabled=level_disabled
     )
     # Only allow selection if not disabled and a real level is chosen
-    if level_selected is False and level in ["Level I", "Level II"]:
+    if level_selected is False and level in ["Level 1", "Level 2"]:
         st.session_state["level_selected"] = True
 
         # Save a new session immediately when level is selected
@@ -277,16 +204,9 @@ with st.sidebar:
     # Show caption if a real level is selected and selector is disabled
     if (
         st.session_state.get("level_selected", False)
-        and st.session_state.get("level_chatapi") in ["Level I", "Level II"]
+        and st.session_state.get("level_chatapi") in ["Level 1", "Level 2"]
     ):
         st.caption("To reset or select another level, start a new session.")
-
-    # WHY: System prompt is dynamically set based on the selected level, using Jinja2 templates for flexibility.
-    context = {}
-    if current_level == "Level I":
-        st.session_state["system_prompt"] = render_jinja_prompt(LEVEL_1_PROMPT_JINJA, context)
-    elif current_level == "Level II":
-        st.session_state["system_prompt"] = render_jinja_prompt(LEVEL_2_PROMPT_JINJA, context)
 
     # TODO: Add a feature toggle for Past session management, allowing users to choose between file-based or DB-based sessions.
     # --- BEGIN: Standard (non-DB) session sidebar code (TEMPORARILY DISABLED) ---
@@ -339,9 +259,9 @@ with st.sidebar:
     #         st.success('Session saved!')
     # --- END: Save Current Session Button ---
 
+    # Sidebar footer with model information and powered by Gemini.
     st.markdown("---")
     st.caption("Powered by Gemini")
-    # WHY: Model selection is now defaulted to gemini-2.5-pro and removed from the UI.
     selected_model = "gemini-2.5-pro"
     st.session_state["selected_model_chatapi"] = selected_model
     st.caption(f"Model: {selected_model}")
@@ -352,13 +272,7 @@ if st.session_state.get("llm_busy", False) and st.session_state.get("should_call
     try:
         with st.spinner("Assistant is thinking..."):
             selected_model = st.session_state.get("selected_model_chatapi", "gemini-2.5-pro")
-            system_prompt = st.session_state.get("system_prompt", "")
-            messages = [{"role": "system", "content": system_prompt}] + [
-                m for m in st.session_state["chat_messages"]
-            ]
-
-            # response_content = asyncio.run(pipe.pipe({"model": selected_model, "messages": messages}, {}, lambda x: None, {}))
-            # # Only append if not already present as the last assistant message
+            messages = [m for m in st.session_state["chat_messages"]]
 
             logger.debug(f"Attempt to call /score endpoint with model: {selected_model}, level: {current_level}")
             response_content = call_flow_score_endpoint(
@@ -380,7 +294,8 @@ if st.session_state.get("llm_busy", False) and st.session_state.get("should_call
                 if session_db_id:
                     session_db.log_message(session_db_id, "assistant", response_content["content"])
             else:
-                # Session title generation (do NOT append to chat history)
+                # Session DB logging is not needed if the last message is a duplicate
+                logger.debug("Duplicate assistant message detected, not logging to session DB.")
                 pass
     except Exception as e:
         error_info = f"Error: {e}\nRaw object type: {type(e.__context__ if e.__context__ else 'Unknown')}\nRaw object details: {response_content if 'response_content' in locals() else 'Not available'}"
@@ -391,48 +306,17 @@ if st.session_state.get("llm_busy", False) and st.session_state.get("should_call
     st.stop()  # Prevents any further UI rendering in this run
 
 # --- MAIN AREA ---
-# WHY: The main area displays the chat interface, including chat history and the chat input box. This is the core user interaction zone.
-
-# TODO: Add feature toggle - This is a secondary new session button in main area, 
-# allows users to start a new session from within the chat interface.
-# Avoids having to open side bar to start new session. Side bar button is still available.
-# On mobile, sidebar is not visible by default, so this button is more accessible.
-# # --- New Session Button in the Upper Right Corner ---
-# col1, col2 = st.columns([8, 1])
-# with col2:
-#     new_session_main = st.button(
-#         "New Session",
-#         key="new_session_main_btn",
-#         help="Start a new session. This will clear the chat and reset the level.",
-#         use_container_width=True
-#     )
-#     if new_session_main:
-#         st.session_state.clear()
-#         st.rerun()
-#     st.markdown("""
-#         <style>
-#         /* Target the main area "New Session" button by its label */
-#         button[data-testid="baseButton"][aria-label="New Session"] {
-#             background-color: #333333 !important;
-#             color: #fff !important;
-#             border-radius: 6px !important;
-#             font-weight: 800 !important;
-#             margin-top: 0.5em !important;
-#             margin-bottom: 0.5em !important;
-#         }
-#         button[data-testid="baseButton"][aria-label="New Session"] > span {
-#             color: #333333 !important;
-#         }
-#     </style>
-#     """, unsafe_allow_html=True)
-# # --- END: New Session Button in Main Area the Upper Right Corner ---
+# The main area displays the chat interface, including chat history and the chat input box.
+# This is the core user interaction zone.
 
 st.header(":speech_balloon: pAIdagogue Chat")
 if "chat_messages" not in st.session_state:
     logger.debug("if 'chat_messages' not in st.session_state")
     st.session_state["chat_messages"] = []
 
-# WHY: Inject custom CSS for improved UI/UX, including font and chat input styling.
+# --- CUSTOM CSS STYLING ---
+# Inject custom CSS for improved UI/UX in the Main Area, including font and chat input styling.
+
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
@@ -523,15 +407,18 @@ div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"
 </style>  
 """, unsafe_allow_html=True)
 
-# Remove the CSS block that targets div[data-testid="stChatMessage"] > div:first-child
-# (undo the last width-related change)
+# --- END CUSTOM CSS STYLING --- #
 
-# WHY: Show the session title if available, to help users keep track of their current topic.
+
+# --- RENDER CHAT HISTORY --- #
+# Chat history is rendered here, showing all messages in the session.
+
+# Session title if available, to help users keep track of their current topic.
 session_title = st.session_state.get("session_title", None)
 if session_title:
     st.markdown(f"<div style='font-size:1.1em; color:#555; margin-bottom:0.5em;'><b>Session Topic:</b> {session_title}</div>", unsafe_allow_html=True)
 
-# WHY: Deduplicate chat messages to avoid repeated entries after reruns or session loads.
+# Deduplicate chat messages to avoid repeated entries after reruns or session loads.
 seen = set()
 deduped = []
 for msg in st.session_state["chat_messages"]:
@@ -548,7 +435,7 @@ for msg in st.session_state["chat_messages"]:
         deduped.append(msg)
 st.session_state["chat_messages"] = deduped  # Always update to ensure deduplication
 
-# WHY: Render chat history using st.chat_message for a native chat UI experience.
+# Renders chat history using st.chat_message for a native chat UI experience.
 logger.debug(f"[Streamlit] Rendering chat history. Total messages: {len(st.session_state.get('chat_messages', []))}")
 for idx, msg in enumerate(st.session_state["chat_messages"]):
     with st.chat_message(msg["role"]):
@@ -560,41 +447,34 @@ for idx, msg in enumerate(st.session_state["chat_messages"]):
         elif msg["role"] == "assistant":
             def style_code(text):
                 # Replace `code` with styled span
+                # Color of the assistant's response code is set to #8c3f1a (dark red)
                 return re.sub(r'`([^`]+)`', r"<span style='color:#8c3f1a; font-weight:400;'>\1</span>", text)
             styled_content = style_code(msg['content'].replace('\n', '  \n'))
             st.markdown(styled_content, unsafe_allow_html=True)
 
-# --- RESTORE THE CHAT INPUT ---
-# WHY: The chat input box is always shown at the bottom, unless a system prompt is missing (e.g., before level selection).
+# --- RESTORE THE CHAT INPUT AREA ---
+# The chat input box is always shown at the bottom, unless a level is not selected.
 # This must be after the chat history rendering, and before the LLM call trigger block
+# to ensure the chat input is always available for user interaction.
 
 level = st.session_state.get("level_chatapi", "Select a level")
-chat_enabled = level in ["Level I", "Level II"]
+chat_enabled = level in ["Level 1", "Level 2"]
 
+# If no level is selected, show a warning message to guide the user.
+# This is to ensure users know they need to select a level before entering messages.
 if not chat_enabled:
     logger.debug("if not chat_enabled")
-    st.warning("Select a level (Level I or Level II) in the **left sidebar** to enter a message.")
+    st.warning("Select a level (Level 1 or Level 2) in the **left sidebar** to enter a message.")
 
 # --- Use a text area for chat input instead of st.chat_input ---
 if "chat_input_text" not in st.session_state:
     logger.debug("if 'chat_input_text' not in st.session_state")
     st.session_state["chat_input_text"] = ""
 
-# The original chat interface was a single line input, suing default sending, where hitting Enter would
-# send the chat. Commented out original chat_input for reference
-# if prompt := st.chat_input("Your message", disabled=not chat_enabled):
-#     print(f"DEBUG: User entered prompt: '{prompt}'")
-#     st.session_state["chat_messages"].append({"role": "user", "content": prompt})
-#     st.session_state.should_call_llm = True
-#     st.rerun()
-
-# Uses an expandable text area and a seperate send button
-# WHY: This allows for multi-line input and better control over sending messages.
-# The text area is styled and controlled here to be larger and more user-friendly.
-# Only visible when a level is selected (Level I or Level II).
 if chat_enabled:
     # --- MOVE THE SPINNER/CAPTION HERE, RIGHT BEFORE THE INPUT ---
     # This ensures the caption is always right above the input, not above the chat history.
+    # This may not be necessary if the spinner is only shown during LLM calls.
     if st.session_state.get("llm_busy", False):
         st.caption("Thinking...")
 
@@ -617,9 +497,6 @@ if chat_enabled:
             use_container_width=True,
             disabled=st.session_state.get("llm_busy", False) # Disable while LLM is busy
         )
-        # if st.session_state.get("llm_busy", False):
-        #     st.caption("Thinking...")
-
 
     # Sends to LLM on ➤ button click or if Enter is pressed and only one line (simulate send on enter)
     if send_clicked and user_text.strip():
@@ -632,10 +509,12 @@ if chat_enabled:
         st.session_state["pending_llm"] = True  # New flag to trigger LLM on next rerun
         st.rerun()
     # Optionally, you can add a note for the user
+    # TODO: Remove this caption if not needed
+    # if not st.session_state.get("llm_busy", False):
     st.caption("Press the ➤ button to send your message.")
     
 # --- Final Rerun Handling for Session Loading (after all other logic) ---
-# WHY: After loading a session, clear the rerun flag so the UI is stable and ready for user input.
+# After loading a session, clear the rerun flag so the UI is stable and ready for user input.
 # This ensures a final clean rerun after _pending_session_load_data has been processed
 # This flag is set by the initial "_pending_session_load_data" block now.
 if st.session_state.get("_rerun_from_load", False):

@@ -5,16 +5,16 @@ import logging
 logging.getLogger(__name__)
 
 # Mapping for level selection to system prompt code
+# Corresponds to flow prompts that use DCC and Logein Word Lists.
 LEVEL_TO_SYSTEM_PROMPT_ID = {
-    "Level I": "S1.3B",
-    "Level II": "S2.3B"
+    "Level 1": "S1.3B",
+    "Level 2": "S2.3B"
 }
 
 def get_system_prompt_id(level: str) -> str:
     """Map user-friendly level to system prompt code."""
-    logging.debug(f"FAE: Getting system prompt ID for level: {level}")
     system_prompt_id = LEVEL_TO_SYSTEM_PROMPT_ID.get(level)
-    logging.debug(f"FAE: Resolved system prompt ID: {system_prompt_id}")
+    logging.debug(f"Resolved {level} to prompt ID: {system_prompt_id}")
     return system_prompt_id
 
 def call_flow_score_endpoint(
@@ -50,9 +50,7 @@ def call_flow_score_endpoint(
     # This is a simple retry mechanism that will retry once if the request fails
     # It can be extended with more sophisticated logic if needed.
     # Note: Streamlit will handle the error if it occurs, so we raise the exception
-    # to be caught by Streamlit's error handling logic.
-    # This is to avoid blocking the Streamlit app with long waits.
-    # If the request fails, it will raise an exception that Streamlit can catch.
+    # to be caught by Streamlit's error handling logic to avoid blocking the Streamlit app with long waits.
     attempt = 0
     while attempt <= max_retries:
         try:
