@@ -64,15 +64,61 @@ st.markdown("""
     border: 0 !important;
 }
 
+/* Hide the header action elements (e.g. "New Session" button) */
+[data-testid='stHeaderActionElements'] {
+    display: none;
+}
+
+/* Hide anchor links next to headers */
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+.stMarkdown h1 a, .stMarkdown h2 a, .stMarkdown h3 a, .stMarkdown h4 a, .stMarkdown h5 a, .stMarkdown h6 a {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+/* More specific targeting for main content headers */
+div[data-testid="stHeader"] h1 a, 
+div[data-testid="stHeader"] h2 a,
+section[data-testid="stMain"] h1 a,
+section[data-testid="stMain"] h2 a,
+section[data-testid="stSidebar"] h1 a,
+section[data-testid="stSidebar"] h2 a {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+/* Hide any anchor elements that might be empty or causing form issues */
+a[href="#"]:empty, a:empty {
+    display: none !important;
+    visibility: hidden !important;
+}
+/* Nuclear option - hide ALL anchor tags in headers regardless of nesting */
+* h1 * a, * h2 * a, * h3 * a, * h4 * a, * h5 * a, * h6 * a {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+            
+/* Reduce the header above the new session button */
+div.st-emotion-cache-10p9htt:has(div[data-testid="stSidebarHeader"]) p {
+    height: 60px !important;
+}
+
+div.st-emotion-cache-479nsk:has(div[data-testid="stMarkdownContainer"]) p {
+    font-size: 2rem !important;
+}
+
 /* Target the sidebar section for accessibility enhancements */
 section[data-testid="stSidebar"] {
     position: relative;
-}
-            
-/* Target the sidebar section for accessibility enhancements */
-section[data-testid="stSidebarHeader"] {
-    height: 1rem; /* Adjust height for better spacing */
-    margin-bottom: 1rem; /* Add some space below the header */
 }
 
 /* Alternative targeting for the sidebar toggle icon */
@@ -322,10 +368,10 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
     st.markdown("""
     <style>
     /* Login screen tab order control */
-    /* input[data-testid*="username_input"] { tab-index: 1 !important; }
+    input[data-testid*="username_input"] { tab-index: 1 !important; }
     input[data-testid*="password_input"] { tab-index: 2 !important; }
     button[data-testid*="login_button"] { tab-index: 3 !important; }
-    */
+                
     /* Focus indicators for login */
     *:focus {
         outline: 3px solid #007acc !important;
@@ -445,11 +491,11 @@ with st.sidebar:
     st.markdown("""
         <style>
         div[data-testid="stSidebar"] button[kind="secondary"] {
-            background-color: #333 !important;
+            background-color: #000000 !important;
             color: #fff !important;
             border-radius: 6px !important;
             font-weight: 600 !important;
-            margin-top: 0.5em !important;
+            margin-top: 0.1em !important;
             margin-bottom: 0.5em !important;
         }
         /* Target the tooltip hover target div that controls the actual button height */
@@ -459,19 +505,25 @@ with st.sidebar:
             max-height: 60px !important;
         }
         /* More specific selector for the New Session button */
-        section[data-testid="stSidebar"] button[data-testid*="new_session_sidebar_btn"] {
+        /*section[data-testid="stSidebar"] button[data-testid*="new_session_sidebar_btn"] {
             height: 60px !important;
             min-height: 60px !important;
             max-height: 60px !important;
-        }
+        } */
+                
+        /* Reduce the header above the new session button */
+        section[data-testid="stSidebar"] div[data-testid="stSidebarContent"] div[data-testid="stSidebarHeader"] {
+            height: 1.2rem !important;
+        }        
+        
         /* Style the New Session button text size */
         section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"] div[data-testid="stMarkdownContainer"] p {
-            font-size: 1.3rem !important;
+            font-size: 1.2rem !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    st.header("pAIdagogue Chat")
+    st.title("pAIdagogue Chat")
     st.write(
         "Simplify authentic Latin passages for your students using AI.  \n\n"
         "Choose a simplification level to match your students' experience:  \n"
@@ -507,7 +559,6 @@ with st.sidebar:
         key="level_chatapi",           # direct session state binding
         # index=LEVEL_OPTIONS.index(current_level) if current_level in LEVEL_OPTIONS else None,
         captions=["Choose Level 1 for first-year Latin", "Choose Level 2 for second-year Latin"],
-        help="Choose Level 1 for first-year or Level 2 for second-year Latin students" if not level_disabled else "Level is locked for this session",
         disabled=level_disabled,
         horizontal=False
     )
@@ -727,7 +778,8 @@ div.st-emotion-cache-1fc0ges:has(div[data-testid="stCaptionContainer"]) p {
 div.st-emotion-cache-1vo6xi6:has(div[data-testid="stCaptionContainer"]) p {
     font-size: 0.875em !important;
     color: black !important;
-}            
+}
+             
 </style>  
 """, unsafe_allow_html=True)
 
@@ -947,6 +999,17 @@ if chat_enabled:
         
         # Show help caption only when not busy
         st.caption("Press the ➤ button to send your message.")
+        # Increase the text size of that caption and make it black
+        st.markdown("""
+        <style>
+        /* Style the help caption to be larger and black */
+        div[data-testid="stCaptionContainer"]:last-of-type p {
+            font-size: 1rem !important;
+            color: black !important;
+            font-weight: 500 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
 
     
 # --- Final Rerun Handling for Session Loading (after all other logic) ---
