@@ -177,7 +177,7 @@ def get_focus_components():
     """
     # Check if we're on the login screen
     if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
-        # LOGIN SCREEN COMPONENTS (Order 1-5)
+        # LOGIN SCREEN COMPONENTS (Order 1-4 to match CSS tab-index)
         return [
             {
                 "id": "username_input",
@@ -202,8 +202,19 @@ def get_focus_components():
                 "focus_text": "Password field - enter your password to log in"
             },
             {
-                "id": "login_button",
+                "id": "show_password_button",
                 "order": 3,
+                "type": "button",
+                "section": "login",
+                "label": "Show/Hide Password",
+                "help": "Toggle password visibility",
+                "enabled": True,
+                "visible": True,
+                "focus_text": "Show password button - press to reveal or hide your password"
+            },
+            {
+                "id": "login_button",
+                "order": 4,
                 "type": "button",
                 "section": "login",
                 "label": "Login",
@@ -244,7 +255,9 @@ def get_focus_components():
         "help": "Choose simplification level for Latin passages",
         "enabled": not (level_selected and current_level in ["Level 1", "Level 2"] and st.session_state.get("chat_messages")),
         "visible": True,
-        "focus_text": "Level selector radio buttons - choose Level 1 for first-year or Level 2 for second-year Latin students" if not (level_selected and current_level in ["Level 1", "Level 2"] and st.session_state.get("chat_messages")) else "Level selector radio buttons - level is locked for this session"
+        "focus_text": ("Level selector radio buttons - choose Level 1 for first-year or Level 2 for second-year Latin students"
+                        if not (level_selected and current_level in ["Level 1", "Level 2"] and st.session_state.get("chat_messages"))
+                        else "Level selector radio buttons - level is locked for this session")
     })
 
     # MAIN CHAT COMPONENTS (Order 11-20)
@@ -317,6 +330,20 @@ def log_focus_order():
 
 # --- AUTHENTICATION ---
 def check_auth():
+    # Add CSS to hide show password buttons
+    st.markdown("""
+    <style>
+    /* Hide Streamlit's built-in show password button */
+    [title="Show password text"] {
+        display: none;
+    }
+    /* Hide custom show password button to prevent focus cycling */
+    .show-password-btn {
+        display: none;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     username = st.text_input(
         "Username",
         key="username_input", 
@@ -347,6 +374,7 @@ def check_auth():
     if login_clicked:
         if username in authenticated_users.keys() and password == authenticated_users[username]:
             st.session_state["authenticated"] = True
+            st.rerun()
         else:
             st.error("Invalid username or password")
 
@@ -367,27 +395,45 @@ if "authenticated" not in st.session_state or not st.session_state["authenticate
     # Add CSS for login screen focus order and all accessibility styles BEFORE any form elements
     st.markdown("""
     <style>
-    /* Login screen tab order control */
-    input[data-testid*="username_input"] { tab-index: 1 !important; }
-    input[data-testid*="password_input"] { tab-index: 2 !important; }
-    button[data-testid*="login_button"] { tab-index: 3 !important; }
-                
-    /* Focus indicators for login */
-    *:focus {
-        outline: 3px solid #007acc !important;
-        outline-offset: 2px !important;
-    }
-    /* Hide header links next to titles */
-    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    /* NOTE: The following original CSS attempts to control tab order using `tabindex` inside CSS rules. */
+    /* This does NOT work because tabindex must be an HTML attribute, not a CSS property. */
+    /* Keeping these here commented for historical/reference purposes. */
+    /*
+    input[data-testid*="username_input"] { tabindex: 1 !important; }
+    input[data-testid*="password_input"] { tabindex: 2 !important; }
+    button[aria-label="Show password text"] { tabindex: 3 !important; }
+    button[aria-label*="password"] { tabindex: 3 !important; }
+    div[data-testid*="password_input"] ~ div button { tabindex: 3 !important; }
+    div[data-testid*="password_input"] button { tabindex: 3 !important; }
+    div[data-testid="stElementContainer"].st-key-login_button button[data-testid="stBaseButton-secondary"] { tabindex: 4 !important; }
+    button[data-testid="stBaseButton-secondary"]:has(div[data-testid="stMarkdownContainer"] p:contains("Login")) { tabindex: 4 !important; }
+
+    / * CSS-only fallback that attempted to hide duplicate buttons (kept commented) * /
+    / *
+    section[data-testid="stMain"] div[data-testid="stElementContainer"] button[data-testid="stBaseButton-secondary"] {
         display: none !important;
     }
-    .stMarkdown h1 a, .stMarkdown h2 a, .stMarkdown h3 a {
-        display: none !important;
+    section[data-testid="stMain"] div[data-testid="stElementContainer"].st-key-login_button button[data-testid="stBaseButton-secondary"] {
+        display: inline-flex !important;
     }
+    section[data-testid="stMain"] button[aria-label*="password"],
+    section[data-testid="stMain"] div[data-testid*="password_input"] button {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+    */
+
+    /* Active styles (non-tabindex related) */
+    *:focus { outline: 3px solid #007acc !important; outline-offset: 2px !important; }
+    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { display: none !important; }
+    .stMarkdown h1 a, .stMarkdown h2 a, .stMarkdown h3 a { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
-    
+
     check_auth()
+
     st.stop()
 
 if st.session_state.get("clear_chat_input", False):
@@ -490,36 +536,36 @@ with st.sidebar:
     # Style the sidebar New Session button to be dark grey with white text and custom height
     st.markdown("""
         <style>
-        div[data-testid="stSidebar"] button[kind="secondary"] {
-            background-color: #000000 !important;
-            color: #fff !important;
-            border-radius: 6px !important;
-            font-weight: 600 !important;
-            margin-top: 0.1em !important;
-            margin-bottom: 0.5em !important;
+        /* Style the New Session button using the outer HTML structure */
+        div[data-testid="stTooltipHoverTarget"] button[data-testid="stBaseButton-secondary"] {
+            /* background-color: #8C8C8C !important; */
+            border: 2px rgba(49, 51, 63, 0.2) solid !important;
         }
+        
         /* Target the tooltip hover target div that controls the actual button height */
         section[data-testid="stSidebar"] div[data-testid="stTooltipHoverTarget"] {
             height: 60px !important;
             min-height: 60px !important;
             max-height: 60px !important;
+            color: #000000 !important; /* Ensure text color is black */
         }
-        /* More specific selector for the New Session button */
-        /*section[data-testid="stSidebar"] button[data-testid*="new_session_sidebar_btn"] {
-            height: 60px !important;
-            min-height: 60px !important;
-            max-height: 60px !important;
-        } */
                 
         /* Reduce the header above the new session button */
         section[data-testid="stSidebar"] div[data-testid="stSidebarContent"] div[data-testid="stSidebarHeader"] {
             height: 1.2rem !important;
-        }        
+        }  
         
-        /* Style the New Session button text size */
+        /* Style the New Session button text size using :has() selector */
         section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"] div[data-testid="stMarkdownContainer"] p {
             font-size: 1.2rem !important;
+            color: #000000 !important; /* Ensure text color is black */
+            font-weight: 600 !important; /* More Bold */
         }
+        /* Style the Level captions
+        section[data-testid="stRadio"] div[data-testid="stCaptionContainer"] p {
+            color: #000000 !important; /* Ensure text color is black */
+        }
+                             
         </style>
     """, unsafe_allow_html=True)
 
