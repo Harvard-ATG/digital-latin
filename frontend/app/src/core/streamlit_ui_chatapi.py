@@ -539,7 +539,7 @@ with st.sidebar:
         /* Style the New Session button using the outer HTML structure */
         div[data-testid="stTooltipHoverTarget"] button[data-testid="stBaseButton-secondary"] {
             /* background-color: #8C8C8C !important; */
-            border: 2px rgba(49, 51, 63, 0.2) solid !important;
+            border: 2px #8C8C8C solid !important;
         }
         
         /* Target the tooltip hover target div that controls the actual button height */
