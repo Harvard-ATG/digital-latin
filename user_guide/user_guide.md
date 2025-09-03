@@ -42,7 +42,7 @@ This app helps Latin instructors simplify authentic Latin passages for students 
 
 ### 3. Using the Output
 - Once the simplified passage and explanation are generated, you can copy any or all of the text and paste it into another document.
-- To copy text, highlight the text to be copied and use Ctrl + C or right click > copy to copy the highlighted text. To paste copied text, use Ctrl + P or right click > paste to paste the last copied content.
+- To copy text, highlight the text to be copied and use Ctrl + C or right click > copy to copy the highlighted text. To paste copied text, use Ctrl + V or right click > paste to paste the last copied content.
 
 **Important:** Sessions are not saved for future access. Once you start a new session or close your browser, the active session will be discarded. Make sure to save any content before closing the window or starting a new session.
 
