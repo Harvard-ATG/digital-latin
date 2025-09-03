@@ -5,6 +5,8 @@ A web-based Latin passage simplification assistant for instructors. Uses AI to h
 Dev URL: https://digital-latin.tlt.dev.harvard.edu
 Prod URL: https://digital-latin.tlt.harvard.edu
 
+Visit the **[User Guide](user_guide/user_guide.md)** for end-user instructions and tips.
+
 ![Digital Latin Streamlit UI](digital_latin_streamlit_ui.png)
 
 ## Key Features
@@ -263,8 +265,6 @@ Production deployments use AWS ECS with Terraform automation:
 For deployment details, see your DevOps repository (e.g., `atg-ops-appserver`).
 
 ## Support Resources
-
-**[User Guide](user_guide.md)**: End-user instructions and tips
   
 **Development Team**: Contact your project maintainers
 
