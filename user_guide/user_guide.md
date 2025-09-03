@@ -69,7 +69,7 @@ A: The assistant processes your submitted passage along with a number of referen
 **Q: I clicked the submit button, but nothing happened. What do I do?**  
 A: Click the submit button again. Sometimes it requires multiple clicks to trigger the submission. 
 
-**Q: How can I tell if my passage submitted successfull?**  
+**Q: How can I tell if my passage submitted successfully?**  
 A: The passage you submitted will change to a blue background and you won't be able to edit it anymore. You will also see the "Assistant is thinking. Please wait..." message below your passage.
 
 **Q: I submitted the same passage and level in multiple sessions, and I got different results each time. Why aren't the results consistent?**  
