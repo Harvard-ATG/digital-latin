@@ -16,11 +16,6 @@ def get_conn():
         dbname = os.environ["DB_NAME"]
         user = os.environ["DB_USER"]
         password = os.environ["DB_PASSWORD"]
-        # Print first letter of non-secret values for debugging (never print password)
-        # logging.debug(f"DB_NAME starts with: {dbname[:1]}")
-        # logging.debug(f"DB_USER starts with: {user[:1]}")
-        # logging.debug(f"DB_HOST starts with: {host}")
-        # logging.debug(f"DB_PORT starts with: {port}")
         return psycopg2.connect(
             dbname=dbname,
             user=user,
@@ -118,7 +113,7 @@ def save_session(session_name, session_data=None, session_db_id=None, end_reason
     else:
         logging.debug("Skipping database save for session")
     
-    # --- TEMPORARY: Write session data to a file for PostgreSQL debugging ---
+    # TEMPORARY: Write session data to a file for PostgreSQL debugging 
     # This is for development/debugging only. Remove before production.
     from pathlib import Path
     debug_file = Path(__file__).parent.parent.parent / "data" / "sessions" / "postgres_debug_session_write.jsonl"
@@ -199,7 +194,7 @@ def log_message(session_id, role, content, skip_db=False):
         new_message_id = str(uuid.uuid4())
         message_id_type = "uuid"
 
-    # --- Write all messages for this session to the debug JSON file ---
+    # Write all messages for this session to the debug JSON file
     debug_file = Path(__file__).parent.parent.parent / "data" / "sessions" / "postgres_debug_session_write.jsonl"
     messages = get_session_messages(session_id, skip_db=skip_db)
     messages_list = []

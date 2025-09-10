@@ -80,20 +80,23 @@ For detailed usage instructions, see [User Guide](user_guide.md).
 ```
 digital-latin/
 ├── frontend/                    # Streamlit UI service
-│   ├── app/src/core/           # Application code
+│   ├── app/src/core/            # Application code
 │   │   ├── streamlit_ui_chatapi.py
 │   │   ├── flow_api_endpoint.py
 │   │   └── session_db_postgres.py
+|.  |.  └── entrypoint.sh
 │   ├── Dockerfile              # Frontend container
 │   └── requirements.txt        # Python dependencies
 ├── backend/                     # Flow API service
 │   ├── digital_latin_flows/    # AI processing flows
-│   ├── _connections_manager_/  # API connections
 │   ├── Dockerfile              # Backend container
 │   └── start.sh                # Service startup script
+└── user_guide/                 # End-user documentation
+│   ├── image_asset.png         # Images assets for use in User Guide
+│   └── user_guide.md           # Finalized user guide
 ├── .env.example                # Environment template
 ├── docker-compose.yml    # Local development
-└── user_guide.md               # End-user documentation
+
 ```
 
 ## Configuration
@@ -167,8 +170,10 @@ SELECT * FROM sessions; # View all sessions
 <details>
 <summary><strong>API Testing</strong></summary>
 
+Test backend flow API directly via curl request or Postman
+
 ```bash
-# Test backend flow API directly
+# Single turn interaction example
 curl http://localhost:8080/score \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,6 +188,43 @@ curl http://localhost:8080/score \
     ]
   }'
 ```
+```bash
+# Multi-turn interaction example
+curl --location 'http://localhost:8080/score' \
+--header 'Content-Type: application/json' \
+--data '{
+    "dynamic_template_variables": {},
+    "llm_model_id": "gemini",
+    "system_prompt_id": "S2.3C",
+    "chat_history": [
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "text": "Eodem Appio auctore Potitia gens, cuius ad Aram Maximam Herculis familiare sacerdotium fuerat, servos publicos ministerii delegandi causa sollemnia eius sacri docuerat. Traditur inde, dictu mirabile et quod dimovendis statu suo sacris religionem facere posset, cum duodecim familiae ea tempestate Potitiorum essent, puberes ad triginta, omnes intra annum cum stirpe exstinctos; nec nomen tantum Potitiorum interisse sed censorem etiam memori deum ira post aliquot annos luminibus captum."
+                }
+            ]
+        },
+        {
+            "role": "model",
+            "parts": [
+                {
+                    "text": "Here is the simplified passage:\n\nAppius auctor huius rei fuit. Gens Potitia sacerdotium familiae suae Herculis ad Aram Maximam habebat. Potitii servos publicos ritus sacros docuerunt, quod munus suum servis mandare volebant.\nHomines narrant fabulam mirabilem."
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "text": "Were any infinitives changed to finite perfect tense verbs, interiit and factus est?"
+                }
+            ]
+        }
+    ]
+}'
+```
+
 </details>
 
 <details>
