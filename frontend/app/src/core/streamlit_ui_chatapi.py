@@ -1,22 +1,21 @@
+###############################################################################
+# CONFIG SECTION: Imports and Initial Configurations
+###############################################################################
 import os
 import sys
 import json
-import asyncio
 import datetime
 import html
 import session_db_postgres as session_db
 import logging
 import sentry_sdk
-import traceback
 import re
 import streamlit as st
-from pathlib import Path
 from flow_api_endpoint import call_flow_score_endpoint, convert_chat_messages_to_chat_history
 from datetime import datetime
-from jinja2 import Template
 from PIL import Image
 
-# Initialize Sentry for error tracking
+### Initialize Sentry for error tracking
 sentry_sdk.init(
     dsn="https://175659c068864530742625044e39cd9b@o291188.ingest.us.sentry.io/4509640390803457",
     send_default_pii=True,
@@ -24,7 +23,9 @@ sentry_sdk.init(
     environment="digital-latin-streamlit-ui-dev"
 )
 
+### Load the favicon Image
 im = Image.open("/app/src/assets/images/gear_robot_owl_face_chatgptedu_generated_2025-08-15.png")
+
 st.set_page_config(
     page_title="pAIdagogue Chat",
     page_icon=im,
@@ -32,6 +33,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+### Logger configuration
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -48,7 +50,25 @@ stderr_handler.setFormatter(formatter)
 
 logger.handlers = [stdout_handler, stderr_handler]
 
-# Define screen reader accessibility CSS early so it's available immediately
+
+# CONFIG: Initial Custom CSS Configurations
+##############################################################################
+
+# Injects custom CSS into the Streamlit app for accessibility and UI tweaks, most changes here
+# are a result of our accessibility assessment.
+#
+# - Defines a "screen reader only" class for visually hidden but accessible text
+# - Hides header action elements (e.g., "New Session" button) for cleaner UI
+# - Hides anchor links next to all header tags (h1–h6) for accessibility and aesthetics
+# - Applies more specific targeting to hide anchor links in main content and sidebar headers
+# - Hides empty anchor elements that may cause form issues
+# - Hides all anchor tags nested within headers, regardless of structure
+# - Reduces the height of the header above the new session button for compact sidebar layout
+# - Increases font size for sidebar markdown container headers for better visibility
+# - Sets the sidebar section to relative positioning for accessibility enhancements
+# - Adds a visually hidden label to the sidebar toggle icon for screen readers
+# - Applies all styles using Streamlit's markdown with `unsafe_allow_html=True`
+
 st.markdown("""
 <style>
 /* Screen reader only text - visually hidden but accessible */
@@ -94,12 +114,12 @@ section[data-testid="stSidebar"] h2 a {
     opacity: 0 !important;
     pointer-events: none !important;
 }
-/* Hide any anchor elements that might be empty or causing form issues */
+/* Hides any anchor elements that might be empty or causing form issues */
 a[href="#"]:empty, a:empty {
     display: none !important;
     visibility: hidden !important;
 }
-/* Nuclear option - hide ALL anchor tags in headers regardless of nesting */
+/* Hides ALL anchor tags in headers regardless of nesting */
 * h1 * a, * h2 * a, * h3 * a, * h4 * a, * h5 * a, * h6 * a {
     display: none !important;
     visibility: hidden !important;
@@ -107,11 +127,10 @@ a[href="#"]:empty, a:empty {
     pointer-events: none !important;
 }
             
-/* Reduce the header above the new session button */
+/* Reduces the header above the new session button */
 div.st-emotion-cache-10p9htt:has(div[data-testid="stSidebarHeader"]) p {
     height: 60px !important;
 }
-
 div.st-emotion-cache-479nsk:has(div[data-testid="stMarkdownContainer"]) p {
     font-size: 2rem !important;
 }
@@ -121,7 +140,7 @@ section[data-testid="stSidebar"] {
     position: relative;
 }
 
-/* Alternative targeting for the sidebar toggle icon */
+/* Targeting for the sidebar toggle icon */
 section[data-testid="stSidebar"] span[data-testid="stIconMaterial"]:after {
     content: "double_arrow_left_close_sidebar_button";
     position: absolute;
@@ -135,7 +154,7 @@ section[data-testid="stSidebar"] span[data-testid="stIconMaterial"]:after {
 </style>
 """, unsafe_allow_html=True)
 
-# Custom CSS to hide the kebab menu and footer
+# Hide Streamlit's default styles to improve UI
 hide_streamlit_style = """
     <style>
     #MainMenu {visibility: hidden;}
@@ -146,7 +165,7 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# Custom CSS to hide the deploy button
+# Hide the native streamlit deploy button
 hide_deploy_button = """
 <style>
 .stDeployButton {
@@ -159,6 +178,13 @@ hide_deploy_button = """
 """
 st.markdown(hide_deploy_button, unsafe_allow_html=True)
 
+
+# CONFIG: Database Initialization
+###############################################################################
+
+# Session DB Configuration with Postgres, including setting up the necessary tables
+# locally when using an ephemeral database
+
 try:
     logger.debug("Imported session_db_postgres")
     os.environ["SESSION_DB_BACKEND"] = "postgres"
@@ -169,13 +195,30 @@ except Exception as e:
 
 SKIP_DB = os.getenv("SKIP_DB", "false").lower() == "true"
 
-# --- FOCUS COMPONENT REGISTRY ---
+
+
+# CONFIG: Focus Component Registry & Accessibility
+###############################################################################
+
+# This section defines all interactive components with explicit focus order and accessibility info.
+# Allowed users to navigate the interface using keyboard shortcuts and and screen readers.
+
+# Each component should have a unique ID and an associated tab index and we can use that
+# the unique ID to manage focus and accessibility features such as helper text.
+
+# First below we define each component using its unique ID
+
 def get_focus_components():
     """
     Define all interactive components with explicit focus order and accessibility info.
-    Lower numbers = earlier in tab order (1, 2, 3, etc.)
+    Lower numbers = earlier in tab order (1, 2, 3, etc)
+    Example: 1 - User Input, 2 - Password Input, etc.
     """
-    # Check if we're on the login screen
+    ###### FOCUS COMPONENTS - LOGIN: for the Login Screen before Authentication ######
+
+    #  If the current screen is the login page, this sets up the focus 
+    # components for the login screen
+
     if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
         # LOGIN SCREEN COMPONENTS (Order 1-4 to match CSS tab-index)
         return [
@@ -224,16 +267,35 @@ def get_focus_components():
                 "focus_text": "Login button - press to authenticate and access the application"
             }
         ]
-    
-    # MAIN APPLICATION COMPONENTS
-    llm_busy = st.session_state.get("llm_busy", False)
+
+    ###### FOCUS COMPONENTS - MAIN: for the Main Sidebar & Chat Screen after Authentication ######
+
+    # When the authentication is successful, the user will see a screen that has
+    # a sidebar and chat components. The visibility and ability to interact with these components
+    # is based on the current session state, therefore we need to account for the current state below.
+
+    # Indicates if the LLM is currently processing a request
+    llm_busy = st.session_state.get("llm_busy", False) 
+
+    # Indicates if chat is enabled, only when a specific level is selected
     chat_enabled = st.session_state.get("level_chatapi") in ["Level 1", "Level 2"]
+
+    # Indicates if a level has been selected
     level_selected = st.session_state.get("level_selected", False)
+
+    # Indicates the current level selected by the user
     current_level = st.session_state.get("level_chatapi")
-    
+
+    # Initialize component list when the user is authenticated
     components = []
     
-    # SIDEBAR COMPONENTS (Order 1-10)
+
+    ### FOCUS COMPONENT - MAIN - SIDEBAR COMPONENTS (Order 1-2)
+
+    # Sets up the focus components for the main sidebar
+    # - New Session button
+    # - Level selector
+
     components.append({
         "id": "new_session_sidebar_btn",
         "order": 1,
@@ -260,9 +322,15 @@ def get_focus_components():
                         else "Level selector radio buttons - level is locked for this session")
     })
 
-    # MAIN CHAT COMPONENTS (Order 11-20)
+    ### FOCUS COMPONENT - MAIN - CHAT AREA COMPONENTS (Order 11-20)
+
+    # Sets up the focus components for the main screen
+    # - Chat input area
+    # - Send message button
+    # - Stop button
+
     if chat_enabled:
-        if not llm_busy:
+        if not llm_busy: # When LLM is not busy/thinking
             # Normal input mode
             components.append({
                 "id": "chat_input_text",
@@ -271,11 +339,11 @@ def get_focus_components():
                 "section": "main",
                 "label": "Your message",
                 "help": "Type your Latin passage or question here",
-                "enabled": chat_enabled,
+                "enabled": chat_enabled, # Enabled based on whether appropriate level is selected
                 "visible": True,
                 "focus_text": "Message input area - type your Latin passage or question here"
             })
-            
+            # Send message button
             components.append({
                 "id": "send_chat_btn",
         "order": 12,
@@ -283,7 +351,7 @@ def get_focus_components():
                 "section": "main", 
                 "label": "➤",
                 "help": "Send message button",
-                "enabled": chat_enabled,
+                "enabled": chat_enabled, # Enabled based on whether appropriate level is selected
                 "visible": True,
                 "focus_text": "Send message button - press to send your message to the AI assistant"
             })
@@ -328,9 +396,20 @@ def log_focus_order():
         if comp["visible"] and comp["enabled"]:
             logger.debug(f"  {comp['order']}: {comp['id']} ({comp['type']}) - {comp['focus_text']}")
 
-# --- AUTHENTICATION ---
+###############################################################################
+# SECTION: Authentication
+###############################################################################
+
+# this section holds the authentication logic.
+
+# Add CSS to hide show password buttons
+# Login forms has a custom show password button, but its precense breaks
+# cursor and focus behavior for accessibility. This custom CSS removes
+# that button
+
+# AUTH - Custom CSS for login form
+###############################################################################
 def check_auth():
-    # Add CSS to hide show password buttons
     st.markdown("""
     <style>
     /* Hide Streamlit's built-in show password button */
@@ -343,7 +422,9 @@ def check_auth():
     }
     </style>
     """, unsafe_allow_html=True)
-    
+
+    # AUTH - Login form
+    ###############################################################################
     username = st.text_input(
         "Username",
         key="username_input", 
@@ -358,7 +439,8 @@ def check_auth():
         help=get_component_help_text("password_input"),
         placeholder="Enter your password"
     )
-    
+
+    # Pulls in authenticated users from environment variables
     authenticated_users = {
         os.environ["AUTH_USER_1"]: os.environ["AUTH_PASSWORD_1"],
         os.environ["AUTH_USER_2"]: os.environ["AUTH_PASSWORD_2"],
@@ -370,7 +452,8 @@ def check_auth():
         key="login_button",
         help=get_component_help_text("login_button"),
     )
-    
+
+    # Check login credentials
     if login_clicked:
         if username in authenticated_users.keys() and password == authenticated_users[username]:
             st.session_state["authenticated"] = True
@@ -378,7 +461,8 @@ def check_auth():
         else:
             st.error("Invalid username or password")
 
-
+# AUTH - Login form instructions
+#####################################################################
 if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
     # The instructions for the form
     instructions_html = """
@@ -440,16 +524,18 @@ if st.session_state.get("clear_chat_input", False):
     st.session_state["chat_input_text"] = ""
     st.session_state["clear_chat_input"] = False
 
-# --- GLOBAL SESSION STATE INITIALIZATION & PENDING LOAD HANDLING ---
+###############################################################################
+# SECTION: Global Session State Initialization & Utility Functions
+###############################################################################
 
 # Utility Functions
-# --- Utility Functions ---
 def pad_label(label, width=30):
+
     """Pad the label with spaces for sidebar alignment."""
     return label.ljust(width)
 
 def human_readable_time(ts):
-    """Convert ISO timestamp to a more readable format for display."""
+    """Convert ISO timestamp to a more readable format for display to store session data"""
     try:
         dt = datetime.fromisoformat(ts)
         return dt.strftime('%b %d, %Y %I:%M %p')
@@ -494,8 +580,11 @@ if "http_call_in_progress" not in st.session_state:
 os.environ["SESSION_DB_BACKEND"] = "postgres"
 session_db.ensure_sessions_table()
 
-# --- SIDEBAR ---
+###############################################################################
+# SECTION: Sidebar UI & Session Management
+###############################################################################
 # Inject custom CSS to hide the collapse button
+
 st.markdown("""
 <style>
 /* This CSS targets the "collapse sidebar" button by its data-testid attribute and hides it */
@@ -505,6 +594,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 with st.sidebar:
+
     sidebar_instructions_2_html = """
     <div id="sidebar-instructions" class="sr-only">
         pAIdagogue Chat Instructions: 
@@ -686,7 +776,10 @@ with st.sidebar:
     st.session_state["selected_model_chatapi"] = selected_model
     st.markdown(f"<p style='color: black; font-size: 0.75em; opacity: 0.6;'>Model: {selected_model}</p>", unsafe_allow_html=True)
 
-# --- MAIN AREA ---
+###############################################################################
+# SECTION: Main Area - Chat UI & Message Rendering
+###############################################################################
+
 # The main area displays the chat interface, including chat history and the chat input box.
 # This is the core user interaction zone.
 
@@ -832,7 +925,9 @@ div.st-emotion-cache-1vo6xi6:has(div[data-testid="stCaptionContainer"]) p {
 # --- END CUSTOM CSS STYLING --- #
 
 
-# --- RENDER CHAT HISTORY --- #
+# RENDER CHAT HISTORY #
+###############################################################################
+
 # Chat history is rendered here, showing all messages in the session.
 
 # Session title if available, to help users keep track of their current topic.
@@ -874,12 +969,17 @@ for idx, msg in enumerate(st.session_state["chat_messages"]):
             styled_content = style_code(msg['content'].replace('\n', '  \n'))
             st.markdown(styled_content, unsafe_allow_html=True)
 
+###############################################################################
+# SECTION: Chat Input Area & LLM Call Trigger
+###############################################################################
+
 # --- RESTORE THE CHAT INPUT AREA ---
 # The chat input box is always shown at the bottom, unless a level is not selected.
 # This must be after the chat history rendering, and before the LLM call trigger block
 # to ensure the chat input is always available for user interaction.
 
 level = st.session_state.get("level_chatapi")
+
 chat_enabled = level in ["Level 1", "Level 2"]
 
 # If no level is selected, show an info message to guide the user.
@@ -895,7 +995,7 @@ if "chat_input_text" not in st.session_state:
 
 if chat_enabled:
     # --- MOVE THE SPINNER/CAPTION HERE, RIGHT BEFORE THE INPUT ---
-    # This ensures the caption is al sways right above the input, not above the chat history.
+    # This ensures the caption is always right above the input, not above the chat history.
     # This may not be necessary if the spinner is only shown during LLM calls.
     if st.session_state.get("llm_busy", False):
         # Show different messages based on whether request was cancelled
@@ -1057,12 +1157,16 @@ if chat_enabled:
         </style>
         """, unsafe_allow_html=True)
 
-    
+###############################################################################
+# SECTION: Final Rerun Handling & Cleanup
+###############################################################################
+
 # --- Final Rerun Handling for Session Loading (after all other logic) ---
 # After loading a session, clear the rerun flag so the UI is stable and ready for user input.
 # This ensures a final clean rerun after _pending_session_load_data has been processed
 # This flag is set by the initial "_pending_session_load_data" block now.
 if st.session_state.get("_rerun_from_load", False):
+
     logger.debug("if _rerun_from_load")
     del st.session_state["_rerun_from_load"]
     # No st.rerun() here, as this means we're done with the load sequence.

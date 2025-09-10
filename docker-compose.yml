@@ -2,9 +2,14 @@ services:
   digital-latin-streamlit-ui-chatapi:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      # Use the local Dockerfile for hot reloading, otherwise use the default Dockerfile
+      dockerfile: frontend/Dockerfile.local.hotloading
     container_name: digital-latin-streamlit-ui-chatapi
     command: ["bash", "./entrypoint.sh"]
+    # Include volumes when developing with hot reloading Dockerfile.local.hotloading
+    volumes:
+      - ./frontend/app:/app
+      - ./frontend/entrypoint.sh:/app/entrypoint.sh
     ports:
       - "8502:8502"
     environment:
@@ -33,10 +38,15 @@ services:
 
   digital-latin-flow:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      # Use the Docker.local.hotloading with volumes for hot reloading, 
+      # otherwise use the default Dockerfile without volumes
+      dockerfile: Dockerfile.local.hotloading
     container_name: digital-latin-flow
     command: ["bash", "./start.sh"]
+    # Add volumes and the backend directory for hot reloading, otherwise do not use volumes
+    volumes:
+      - ./backend:/app
     ports:
       - "8080:8080"
     environment:

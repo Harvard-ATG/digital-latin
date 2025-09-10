@@ -4,41 +4,47 @@ import os
 import time
 import boto3
 import requests
-import tiktoken
-from promptflow.client import PFClient
 from promptflow.core import tool
-from promptflow.connections import CustomConnection
-from _connections_manager_.aws_connection_utils import (
-    ensure_promptflow_aws_connection,
-)
-from _connections_manager_.gemini_connection_utils import (
-    ensure_promptflow_gemini_connection,
-)
-from _connections_manager_.common_secrets_loader import get_env_var
-from _connections_manager_.client_utils import get_pf_client
-from _connections_manager_.keyring_utils import verify_keyring # ruff: noqa: E402
 from jinja2 import (
     Environment,
     FileSystemLoader,
     select_autoescape,
 )
 from botocore.exceptions import ClientError
+from pathlib import Path
 
-PROJECT_ROOT_FOR_TEMPLATES = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../../../../")
-)
+def find_project_root(marker=".project_root"):
+    """
+    Searches upwards from the current file to find the project root.
+    
+    The project root is identified by the presence of a marker file or directory
+    (e.g., '.git', 'pyproject.toml').
+    """
+    # Start from the directory of the current file
+    current_path = Path(__file__).resolve().parent
+    while current_path != current_path.parent:
+        if (current_path / marker).exists():
+            return current_path
+        current_path = current_path.parent
+    raise FileNotFoundError(f"Project root marker '{marker}' not found.")
 
+# Constants for model IDs and connection names
 CLAUDE_3_7_SONNET_MODEL_ID = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
-DEEPSEEK_MODEL_ID = "us.deepseek.r1-v1:0"
-GEMINI_MODEL_ID = "gemini-2.5-pro-preview-05-06"
-# GEMINI_MODEL_ID = "gemini-2.5-pro-preview-06-05"
-# GEMINI_MODEL_ID = "gemini-2.5-pro"
 CLAUDE_4_0_SONNET_MODEL_ID = "us.anthropic.claude-sonnet-4-20250514-v1:0"
 CLAUDE_4_0_OPUS_MODEL_ID = "us.anthropic.claude-opus-4-20250514-v1:0"
-GEMINI_CONNECTION = "gemini_connection"
+DEEPSEEK_MODEL_ID = "us.deepseek.r1-v1:0"
+GEMINI_MODEL_ID = "gemini-2.5-pro-preview-05-06"
+
+# Connection names and service names
 BEDROCK_CONNECTION = "bedrock_connection"
 BEDROCK_SERVICE_NAME = "bedrock-runtime"
+GEMINI_CONNECTION = "gemini_connection"
+
+# Gemini API endpoints
 GEMINI_BASE_URL = "https://go.apis.huit.harvard.edu/ais-google-gemini"
+GEMINI_PRO_ENDPOINT = "/v1beta/models/gemini-2.5-pro:generateContent"
+
+# Default AWS region
 DEFAULT_REGION = "us-east-1"
 
 
@@ -68,22 +74,15 @@ def invoke_llm(
               Includes the *rendered* prompts used for reporting, and the prompt_id.
     """
     try:
-
+        PROJECT_ROOT_FOR_TEMPLATES = find_project_root()
         print(f"Rendering prompts from templates in {PROJECT_ROOT_FOR_TEMPLATES}", file=sys.stderr)
 
-        # Merge template variables within the Python tool, ** operator unpacks dictionarys
-        # Result is single dictionary with key words from both dictionaries on same level,
-        # In python packing merges, the rightmost (later or last) dictionaries will always win
-        # in python unpacking merges
-        print("About to merge template variables...", file=sys.stderr)
+        print("Merging template variables...", file=sys.stdout)
         merged_template_variables = {
             **selector_template_variables,
             **dynamic_template_variables,
         }
-        print("Merged the Template Variables: ", file=sys.stderr)
-        # print(f"merge dcc: {merged_template_variables["dcc_words"][:100] "dcc_words" in merged_template_variables else "No dcc_words in merged variables"}) 
-        # print(f"merge logein: {merged_template_variables["logeion_words"][:100]}..." if "logeion_words" in merged_template_variables else "No logeion in merged variables") 
-
+        print("Merged the Template Variables: ", file=sys.stdout)
 
         # Set up Jinja2 environment to load templates from the project root
         env = Environment(
@@ -96,11 +95,14 @@ def invoke_llm(
 
         truncated_chat_history = []
         for message in chat_history:
+            
             # Copy the message structure
             new_message = message.copy()
+
             # Copy the parts list
             new_parts = []
             for part in message.get("parts", []):
+
                 # Truncate the text if present
                 if "text" in part:
                     truncated_text = part["text"][:20] + ("..." if len(part["text"]) > 20 else "")
@@ -112,137 +114,49 @@ def invoke_llm(
         
         rendered_user_prompt = truncated_chat_history
 
-        # Print out the template paths before validation
-        # print(f"user_prompt_template_path: {user_prompt_template_path}", file=sys.stderr)
-        print(f"system_prompt_template_path: {system_prompt_template_path}", file=sys.stderr)
-
-        # Basic input validation for paths
-        # if not user_prompt_template_path or not system_prompt_template_path:
-        #     error_msg = "User or System prompt template path cannot be empty."
-        #     return {"error": error_msg, "status": "failed"}
-        
-        print("..0", file=sys.stderr)
         try:
-            print("..1", file=sys.stderr)
-            # Print the full path to the template file
+
             system_template_full_path = os.path.join(PROJECT_ROOT_FOR_TEMPLATES, system_prompt_template_path)
-            print(f"Looking for system template at: {system_template_full_path}", file=sys.stderr)
+            print(f"System template full path: {system_template_full_path}", file=sys.stderr)
+            
             if not os.path.isfile(system_template_full_path):
                 print(f"ERROR: System template file does not exist: {system_template_full_path}", file=sys.stderr)
-            # Render System Prompt Template
-
-            system_template = env.get_template(system_prompt_template_path)
-            print(f"..1 - system templated", file=sys.stderr)
-            rendered_system_prompt = system_template.render(merged_template_variables)
-            print(f"Rendered System Prompt (truncated): {rendered_system_prompt[:500]}...", file=sys.stderr)
-
-            # print("..2", file=sys.stderr)
-            # # Print the full path to the template file
-            # user_template_full_path = os.path.join(PROJECT_ROOT_FOR_TEMPLATES, user_prompt_template_path)
-            # print(f"Looking for system template at: {user_template_full_path}", file=sys.stderr)
-            # if not os.path.isfile(user_template_full_path):
-            #     print(f"ERROR: User template file does not exist: {user_template_full_path}", file=sys.stderr)    
             
-            # # Render User Prompt Template
-            # user_template = env.get_template(user_prompt_template_path)
-            # print(f"..2 - user templated", file=sys.stderr)
-            # rendered_user_prompt = user_template.render(merged_template_variables)
-            # print(f"Rendered User Prompt (truncated): {rendered_user_prompt[:200]}...", file=sys.stderr)
+            
+            # Render System Prompt Template
+            system_template = env.get_template(system_prompt_template_path)
+            rendered_system_prompt = system_template.render(merged_template_variables)
 
         except Exception as e:
-            return {"error": f"Failed to render Jinja template(s): {e}", "status": "failed"}
+            return {"Error": f"Failed to render Jinja template(s): {e}", "status": "failed"}
+        
     except Exception as e:
         print(f"Error: An error occurred while rendering prompts: {e}", file=sys.stderr)
 
-    # After merging template variables
-    if "dcc_words" in merged_template_variables:
-        print(f"Length of dcc_words template variable: {len(merged_template_variables['dcc_words'])}", file=sys.stderr)
-
-    # After rendering the system prompt
-    print(f"Length of rendered_system_prompt: {len(rendered_system_prompt)}", file=sys.stderr)
-    print(f"First 500 characters of rendered_system_prompt:\n{rendered_system_prompt[:500]}", file=sys.stderr)
-    try:
-        # Verify keyring to ensure keyring is set up and available
-        # This eliminates the need to provide the keyring password
-        # interactively
-        has_existing_connection = False
-        print(f"Identifying connections for model_id: {model_id}", file=sys.stderr)
-        verify_keyring()
-        # Attempt to get connections from the Promptflow Client
-        pf_client = get_promptflow_client()
-        all_connections = pf_client.connections.list()
-        if all_connections:
-            connections_list = []
-            has_existing_connection = True
-            for connection in all_connections:
-                connections_list.append(connection.name)
-            print(f"Connections found on PF Client - {connections_list}", file=sys.stderr)
-        else:
-            has_existing_connection = False
-            print("No connections found on PF Client", file=sys.stderr)
-    except Exception as e:
-        print(
-            f"Error: An error occured when checking Promptflow Client for connections: {e}",
-            file=sys.stderr
-        )
-        print("Will build connections instead", file=sys.stderr)
-        pass
-
     if "gemini" in model_id.lower():
         try:
-            print("Getting Gemini Connections...", file=sys.stderr)
-            # Get gemini connection from PF Client
-            if (has_existing_connection and
-                GEMINI_CONNECTION in connections_list
-                and pf_client.connections.get(name=GEMINI_CONNECTION).configs.get(
-                    "base_url"
-                )
-                == GEMINI_BASE_URL
-            ):
-                gemini_connection = pf_client.connections.get(name=GEMINI_CONNECTION)
+            # Directly get Gemini API key and base URL
+            try:
+                api_key = os.environ["GEMINI_API_KEY"]
+                base_url = os.environ.get("GEMINI_BASE_URL", GEMINI_BASE_URL)
+            except Exception as e:
+                return {"error": f"Missing Gemini API credentials: {e}", "status": "failed"}
 
-            else:
-                # Create new gemini connection
-                gemini_connection = create_gemini_connection()
-
-            print("Gemini Connection found or created successfully.", file=sys.stderr)
-            api_key = gemini_connection.secrets.get("api_key")
-            base_url = gemini_connection.configs.get(
-                "base_url", "https://go.apis.huit.harvard.edu/ais-google-gemini"
-            )
-            print("Gemini api_key and base_url retrieved successfully.", file=sys.stderr)
-            if not api_key:
-                raise ValueError("API key not found in the Gemini connection.")
-            if not base_url:
-                raise ValueError("Base URL not found in the Gemini connection.")
-
-            api_endpoint = f"{base_url}/v1beta/models/gemini-2.5-pro:generateContent"
-            
-            print(f"Chat History: {chat_history}", file=sys.stderr)
-
+            api_endpoint = f"{base_url}{GEMINI_PRO_ENDPOINT}"
             payload = {
-                # "contents": [  # Only user messages (and interleaved model messages) go here
-                #     {"role": "user", "parts": [{"text": rendered_user_prompt}]}
-                # ],
                 "contents": chat_history,
-                "generationConfig": { # Temporarily remove so we get default model content and behavior
-                    "maxOutputTokens": 65536,  # Adjust as needed - Temporarily removed for default model response
+                "generationConfig": {
+                    "maxOutputTokens": 65536,
                 }
             }
-
             if rendered_system_prompt:
-                # Gemini 2.5 expects "system_instruction" (underscore)
                 payload["system_instruction"] = {
                     "parts": [{"text": rendered_system_prompt}]
                 }
-                print("Added system instruction to payload", file=sys.stderr)
-
-
             headers = {"Content-Type": "application/json", "api-key": api_key}
-
             start_time = time.time()
             try:
-                print(f"Calling Gemini API at {api_endpoint} with payload: {json.dumps(payload)[:500]}...", file=sys.stderr)
+                print(f"Calling Gemini API at {api_endpoint} with payload: {json.dumps(payload)[:500]}...", file=sys.stdout)
                 response = requests.post(api_endpoint, headers=headers, json=payload)
                 response.raise_for_status()
             except requests.exceptions.HTTPError as http_err:
@@ -252,16 +166,14 @@ def invoke_llm(
                     "model_id_used": model_id,
                     "user_prompt_used": rendered_user_prompt,
                     "system_prompt_used": rendered_system_prompt,
-                    "response_text": "",
+                    "response_text": f"HTTP error occurred: {http_err}",
                     "full_api_response": {},
                     "llm_run_time": 0,
                     "status": "failed",
                     "error": f"HTTP error occurred: {http_err}"
                 }
-
             response_json = response.json()
             full_api_response = response_json
-
             llm_text_response = ""
             if response_json and response_json.get("candidates"):
                 for candidate in response_json["candidates"]:
@@ -283,79 +195,31 @@ def invoke_llm(
                 "llm_run_time": duration,
                 "status": "success",
             }
-            return llm_node_invocation_output
 
-        except requests.exceptions.RequestException as e:
-            return {
-                "system_prompt_id": system_prompt_id,
-                "model_id_used": model_id,
-                "user_prompt_used": rendered_user_prompt,
-                "system_prompt_used": rendered_system_prompt,
-                "response_text": "",
-                "full_api_response": {},
-                "llm_run_time": 0,
-                "status": "failed",
-                "error": f"HTTP Request failed: {e}"
-            }
-        except ValueError as e:
-            return {
-                "system_prompt_id": system_prompt_id,
-                "model_id_used": model_id,
-                "user_prompt_used": rendered_user_prompt,
-                "system_prompt_used": rendered_system_prompt,
-                "response_text": "",
-                "full_api_response": {},
-                "llm_run_time": 0,
-                "status": "failed",
-                "error": f"Configuration error: {e}"
-            }
+            return llm_node_invocation_output
+        
         except Exception as e:
+            print(f"Error: An error occurred while invoking Gemini API: {e}", file=sys.stderr)
             return {
                 "system_prompt_id": system_prompt_id,
                 "model_id_used": model_id,
                 "user_prompt_used": rendered_user_prompt,
                 "system_prompt_used": rendered_system_prompt,
-                "response_text": "",
+                "response_text": f"HTTP error occurred: {e}",
                 "full_api_response": {},
                 "llm_run_time": 0,
                 "status": "failed",
                 "error": f"An unexpected error occurred: {e}"
             }
-
     else:
         try:
-            print("Getting Bedrock Connections...", file=sys.stderr)
-            # Get bedrock connection from PF Client'
-            if (has_existing_connection and
-                BEDROCK_CONNECTION in connections_list
-                and pf_client.connections.get(name=BEDROCK_CONNECTION).configs.get(
-                    "region_name"
-                )
-                == DEFAULT_REGION
-            ):
-                print("Found Bedrock Connection", file=sys.stderr)
-                bedrock_connection = pf_client.connections.get(name=BEDROCK_CONNECTION)
-
-            else:
-                # Create new bedrock connection 
-                bedrock_connection = create_aws_connection()
-
-            # Retrieve AWS credentials and region from the PromptFlow CustomConnection
-            aws_access_key_id = bedrock_connection.secrets.get("aws_access_key_id")
-            aws_secret_access_key = bedrock_connection.secrets.get(
-                "aws_secret_access_key"
-            )
-            aws_region = bedrock_connection.configs.get(
-                "region_name", "us-east-1"
-            )  # Default to us-east-1 if not specified
-
-            if not aws_access_key_id or not aws_secret_access_key:
-                raise Exception(
-                    "AWS access_key_id or secret_access_key not found in the Bedrock connection."
-                )
-
-            # Initialize Bedrock Runtime client
-            print("Calling bedrock", file=sys.stderr)
+            # Directly get AWS credentials
+            try:
+                aws_access_key_id = os.environ["AWS_AI_WORKFLOW_CORE_DEV_ID"]
+                aws_secret_access_key = os.environ["AWS_AI_WORKFLOW_CORE_DEV_SECRET"]
+                aws_region = os.environ.get("AWS_DEFAULT_REGION", DEFAULT_REGION)
+            except Exception as e:
+                return {"error": f"Missing AWS credentials: {e}", "status": "failed"}
             bedrock_runtime = boto3.client(
                 service_name="bedrock-runtime",
                 region_name=aws_region,
@@ -373,14 +237,12 @@ def invoke_llm(
                 CLAUDE_4_0_OPUS_MODEL_ID,
                 CLAUDE_4_0_SONNET_MODEL_ID,
             ]:
-                # Claude models (e.g., anthropic.claude-3-sonnet-20240229-v1:0)
                 print(f"The claude model is {model_id}", file=sys.stderr)
                 messages = []
                 messages.append({"role": "user", "content": rendered_user_prompt})
 
                 body = {
                     "anthropic_version": "bedrock-2023-05-31",
-                    "system": rendered_system_prompt,
                     "max_tokens": 5000,  # Adjust as needed - Temporarily removed for defualt model response. Initially used 64000, for Claude 4 set to 5000
                     "messages": messages,
                 }
@@ -389,7 +251,7 @@ def invoke_llm(
                     body["system"] = rendered_system_prompt
 
             elif "deepseek" in model_id.lower():
-                # Deepseek models (e.g., deepseek-llm-v2)
+                # Deepseek's response format is similar to OpenAI chat completions
                 messages = []
                 if rendered_system_prompt:
                     messages.append(
@@ -400,13 +262,8 @@ def invoke_llm(
                 body = {
                     "messages": messages,
                     "stream": False,
-                    "max_tokens": 32000,
-                    # "max_tokens": 4000, # Adjust as needed - Temporarily removed for default model reponse
-                    # "temperature": 0.7, # Adjust as needed - Temporarily removed for default model response.
-                    # "top_p": 1.0, # Adjust as needed - Removed to use default model response
-                    # "stop": [] # Adjust as needed - Removed to use default model response
+                    "max_tokens": 32000
                 }
-                # Deepseek's response format is similar to OpenAI chat completions
 
             else:
                 raise ValueError(
@@ -415,7 +272,7 @@ def invoke_llm(
                 )
 
             print(
-                f"Invoking Bedrock model: {model_id} in region {aws_region}",
+                f"Invoking Bedrock model: {model_id}",
                 file=sys.stderr,
             )
 
@@ -468,52 +325,3 @@ def invoke_llm(
             return {"error": f"Configuration or Payload Error: {e}", "status": "failed"}
         except Exception as e:
             return {"error": f"An unexpected error occurred: {e}", "status": "failed"}
-
-
-def create_aws_connection() -> CustomConnection:
-
-    print("Creating a new Bedrock connection", file=sys.stderr)
-
-    try:
-        aws_access_key = get_env_var("AWS_AI_WORKFLOW_CORE_DEV_ID")
-        aws_secret_key = get_env_var("AWS_AI_WORKFLOW_CORE_DEV_SECRET")
-        aws_region = get_env_var("AWS_DEFAULT_REGION") or "us-east-1"
-
-        connection = ensure_promptflow_aws_connection(
-            access_key=aws_access_key,
-            secret_key=aws_secret_key,
-            region=aws_region,
-            connection_name=BEDROCK_CONNECTION,
-            service_name=BEDROCK_SERVICE_NAME,
-        )
-    except Exception as e:
-        raise Exception(f"An error occurred while creating the Gemini connection: {e}")
-    return connection
-
-
-def create_gemini_connection() -> CustomConnection:
-
-    print("create new gemini connection", file=sys.stderr)
-    try: 
-        api_key = get_env_var("GEMINI_API_KEY")
-        base_url = get_env_var("GEMINI_BASE_URL")
-
-        # Create the connection object with desired properties
-        connection = CustomConnection(
-            name=GEMINI_CONNECTION,
-            secrets={
-                "api_key": api_key
-            },  # The 'api_key' will be accessed by gemini_llm_invocation.py
-            configs={
-                "base_url": base_url
-            },  # The 'base_url' will be accessed by gemin_llm_invocation.py
-            description=f"HUIT AI Services Gemini API Connection via {base_url}",
-        )
-    except Exception as e:
-        raise Exception(f"An error occurred while creating the Gemini connection: {e}")
-    return connection
-
-
-def get_promptflow_client() -> PFClient:
-    client = get_pf_client()
-    return client

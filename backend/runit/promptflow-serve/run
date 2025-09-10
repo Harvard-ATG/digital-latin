@@ -25,7 +25,7 @@ gunicorn_app="promptflow.core._serving.app:create_app(engine='${SERVING_ENGINE}'
 
 # THIS IS THE KEY LINE THAT NEEDS TO BE CHANGED IF THE FLOW DIRECTORY IS NOT IN THE RIGHT PLACE
 # cd /digital_latin_flows/flows/multi_llm_parallel_flow  --- USE THIS --, COMMENT OUT LINE BELOW
-cd /backend/digital_latin_flows/flows/chat_flow
+cd /app/digital_latin_flows/flows/chat_flow
 # cd /flow 
 
 if [ "$SERVING_ENGINE" = "flask" ]; then

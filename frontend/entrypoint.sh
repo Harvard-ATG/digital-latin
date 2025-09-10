@@ -28,4 +28,4 @@ fi
 
 echo "[DEBUG] Starting Streamlit..."
 # Start Streamlit app
-exec streamlit run /app/src/core/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0
+exec streamlit run src/core/streamlit_ui_chatapi.py --server.port=8502 --server.address=0.0.0.0
