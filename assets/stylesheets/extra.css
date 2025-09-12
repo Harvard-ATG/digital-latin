@@ -1,0 +1,13 @@
+[data-md-color-scheme="harvard"] {
+    --md-primary-fg-color: #a51c30;
+    --md-primary-fg-color--light: #c22138;
+    --md-primary-fg-color--dark: #791523;
+}
+
+a {
+    text-decoration: underline;
+}
+
+nav a {
+    text-decoration: none;
+}
