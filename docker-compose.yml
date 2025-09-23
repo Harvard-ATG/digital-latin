@@ -44,7 +44,7 @@ services:
       dockerfile: Dockerfile.local.hotloading
     container_name: digital-latin-flow
     command: ["bash", "./start.sh"]
-    # Add volumes and the backend directory for hot reloading, otherwise do not use volumes
+    # Add volumes and the backend directory for hot reloading, otherwise do not use
     volumes:
       - ./backend:/app
     ports:

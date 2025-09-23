@@ -31,6 +31,8 @@ outputs:
   response_text:
     type: string
     reference: ${llm_chat_node.output.response_text}
+
+# OUR NODES ARE HERE
 nodes:
 - name: prompt_selector_node
   type: python
@@ -38,6 +40,7 @@ nodes:
     type: code
     path: ../../tooling/tools/prompt_selector_tool.py
   inputs:
+  # Takes in the system_prompt_id from inputs above.
     system_prompt_id: ${inputs.system_prompt_id}
 - name: llm_chat_node
   type: python
@@ -47,7 +50,7 @@ nodes:
   inputs:
     chat_history: ${inputs.chat_history}
     system_prompt_id: ${inputs.system_prompt_id}
-    system_prompt_template_path: ${prompt_selector_node.output.system_prompt_template_path}
     model_id: ${inputs.llm_model_id}
-    selector_template_variables: ${prompt_selector_node.output.template_variables}
     dynamic_template_variables: ${inputs.dynamic_template_variables}
+    system_prompt_template_path: ${prompt_selector_node.output.system_prompt_template_path}
+    selector_template_variables: ${prompt_selector_node.output.template_variables}

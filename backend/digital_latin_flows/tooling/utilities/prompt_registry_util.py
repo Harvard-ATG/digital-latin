@@ -1,3 +1,4 @@
+# THE GOAL OF THIS FILE IS TO TAKE IN THE PROMPT_ID and RETURN THE CORRECT FILE NAME.
 # -------------------------------------------------------------
 # This module defines and manages the registry of available prompt templates
 # for the Digital Latin project. It provides lookup functions for system,

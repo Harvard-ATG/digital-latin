@@ -1,0 +1,27 @@
+site_name: Digital Latin - User Guide
+nav:
+  - Home: user_guide.md
+
+theme:
+  name: material
+  palette:
+    scheme: harvard
+  logo: assets/harvard_shield.svg
+  favicon: assets/favicon.ico
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.superfences
+  - pymdownx.details
+
+  - toc:
+      permalink: true
+  - footnotes
+  - tables
+  - attr_list
+plugins:
+  - search

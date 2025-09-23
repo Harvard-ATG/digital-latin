@@ -51,6 +51,7 @@ def call_flow_score_endpoint(
     # It can be extended with more sophisticated logic if needed.
     # Note: Streamlit will handle the error if it occurs, so we raise the exception
     # to be caught by Streamlit's error handling logic to avoid blocking the Streamlit app with long waits.
+    # Since response can take several minutes, we need to account for that in our timeout, set to 120 here.
     attempt = 0
     while attempt <= max_retries:
         try:
@@ -58,12 +59,12 @@ def call_flow_score_endpoint(
             response.raise_for_status()
             response_data = response.json()
             streamlit_response = convert_score_response_to_streamlit_message(response_data)
-            logging.debug(f"FAE: Received response from /score endpoint: {response_data}")
-            logging.debug(f"FAE: Converted response for Streamlit: {streamlit_response}")   
+            logging.debug(f"Received response from /score endpoint: {response_data}")
+            logging.debug(f"Converted response for Streamlit: {streamlit_response}")   
             return streamlit_response
         except requests.RequestException as e:
             if attempt == max_retries:
-                logging.error(f"FAE: Failed to call /score endpoint after {max_retries + 1} attempts: {e}")
+                logging.error(f"Failed to call /score endpoint after {max_retries + 1} attempts: {e}")
                 raise e  # Raise the actual error to be caught by Streamlit logic
             attempt += 1
 
@@ -100,26 +101,3 @@ def convert_score_response_to_streamlit_message(response_data, role="assistant")
     else:
         content = str(response_data)
     return {"role": role, "content": content}
-
-# Example usage (for testing, remove in production):
-if __name__ == "__main__":
-    # Original Streamlit chat messages (including system message)
-    streamlit_messages = [
-        {"role": "system", "content": "You are a helpful assistant for Latin translation."},
-        {"role": "user", "content": "Help me translate the word balut to English"}
-    ]
-    print("Original Streamlit messages:")
-    print(streamlit_messages)
-
-    # Convert to /score API chat_history format
-    chat_history = convert_chat_messages_to_chat_history(streamlit_messages)
-    print("\nParsed chat_history for /score API:")
-    print(chat_history)
-
-    # Call the /score endpoint with the converted chat history
-    result = call_flow_score_endpoint(
-        chat_history=chat_history,
-        level="Level 1"
-    )
-    print("\nResponse from /score endpoint:")
-    print(result)
