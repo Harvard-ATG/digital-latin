@@ -1,0 +1,13 @@
+# This would be used if you're setting up the environment for the entire solution.
+promptflow==1.18.1
+promptflow-sdk
+promptflow-tools
+boto3
+
+python-dotenv
+
+# To manage connection secrets
+pycryptodome
+keyring
+keyrings.alt
+keyrings.cryptfile

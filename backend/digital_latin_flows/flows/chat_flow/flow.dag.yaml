@@ -1,0 +1,53 @@
+inputs:
+  system_prompt_id:
+    type: string
+    default: S1.3C
+  chat_history:
+    type: list
+    items:
+      type: object
+      properties:
+        role:
+          type: string
+        parts:
+          type: list
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+    default: []
+  # The model ID can be set to any valid LLM model ID supported by the platform
+  # For example, 'gemini-2.5-pro' for Gemini Pro or 'gpt-4' for OpenAI GPT-4.
+  # This can be customized based on the specific LLM you want to use.
+  # Ensure that the model ID is compatible with the
+  llm_model_id:
+    type: string
+    default: gemini-2.5-pro
+  dynamic_template_variables:
+    type: object
+    default: {}
+outputs:
+  response_text:
+    type: string
+    reference: ${llm_chat_node.output.response_text}
+nodes:
+- name: prompt_selector_node
+  type: python
+  source:
+    type: code
+    path: ../../tooling/tools/prompt_selector_tool.py
+  inputs:
+    system_prompt_id: ${inputs.system_prompt_id}
+- name: llm_chat_node
+  type: python
+  source:
+    type: code
+    path: nodes/llm_chat_invocation.py
+  inputs:
+    chat_history: ${inputs.chat_history}
+    system_prompt_id: ${inputs.system_prompt_id}
+    system_prompt_template_path: ${prompt_selector_node.output.system_prompt_template_path}
+    model_id: ${inputs.llm_model_id}
+    selector_template_variables: ${prompt_selector_node.output.template_variables}
+    dynamic_template_variables: ${inputs.dynamic_template_variables}
