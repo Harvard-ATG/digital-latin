@@ -155,11 +155,11 @@ docker-compose -f docker-compose.yml down -v
 </details>
 
 <details>
-<summary><strong>Entrypoints</strong></summary>
+<summary><strong>Entrypoint Files</strong></summary>
 
-The application has distinct entry points for each service, managed by their respective Dockerfiles and startup scripts. Understanding these points is crucial for debugging and modifying the application's core behavior.
+The application has distinct entry point files for each service, managed by their respective Dockerfiles and startup scripts. Understanding these points is crucial for debugging and modifying the application's core behavior.
 
-### Frontend Service
+### Frontend Service: Streamlit Service
 
 The frontend's entry point is defined in its Dockerfile and handled by an entrypoint.sh script. This script executes a Python file that serves the Streamlit UI, effectively starting the user-facing application.
 
@@ -167,16 +167,15 @@ The frontend's entry point is defined in its Dockerfile and handled by an entryp
 
     Command: `streamlit run streamlit_ui_chatapi.py`
 
-#### Backend Service
+#### Backend Service: AI Workflow Service
 
-The backend's entry point is the start.sh script, which launches the Promptflow service. This script is responsible for starting the API server that exposes the machine learning flows.
+Our backend operates as a dedicated AI workflow service built on [Promptflow](https://github.com/microsoft/promptflow). It orchestrates the entire process of generating text, from selecting the right prompt to calling the large language model (LLM).
 
-    Location: `backend/start.sh`
+For a detailed technical overview, including setup instructions and implementation details, please refer to the [Backend Service README](/backend/digital_latin_flows/README.md).
 
-    Command: `pf flow serve --source /backend/digital_latin_flows --host 0.0.0.0 --port 8080 --api-key YOUR_API_KEY`
 
-    *Other Key files*:
-    
+  - ***Key files**:
+
     -`llm_chat_invocation.py`: This file acts as the orchestrator. It's the flow's entry point, which uses the prompt_registry to get a template, the prompt_tool to render it, and the llm_implementation to send the final prompt to the Gemini API.
 
     -`prompt_selector_tool.py`: This is a utility for template rendering. It takes a prompt template and dynamic variables and combines them into a single, complete prompt string.

@@ -1,198 +1,85 @@
-# `digital_latin_project` - LLM Applications for Digital Latin Analysis
+# Backend Service: AI Workflow with Promptflow
 
-This directory (`digital_latin_flows/`) houses the PromptFlow-based applications specifically tailored for the Digital Latin Project within the broader `fas_llm_applications` directory. Its primary goal is to leverage Large Language Models (LLMs) for various tasks related to the analysis, understanding, and generation of scaffolded Latin text, facilitating teaching and learning in the humanities.
+Our backend is a self-contained AI workflow service powered by [Promptflow](https://github.com/microsoft/promptflow), which we originally used for testing various interations of prompts and llms in our tool. It is a robust framework for building and orchestrating AI applications. Promptflow allows us to manage our generative AI logic in a clear, modular, and scalable way, supporting advanced features such as prompt engineering, multi-model orchestration, and modular logic via flows and custom nodes.
 
-## Table of Contents
+Promptflow packages are used in this tool, but broader functionality or the VS Code Extension is not leveraged in this backend implementation.
+---
 
-* [Context within `fas_llm_apps`](#context-within-fas_llm_apps)
+## What is a "Flow"?
 
-* [Components](#components)
+A **flow** is a self-contained AI application or workflow. An AI workflow is a step-by-step process that utilizes artificial intelligence to automate tasks, analyze data, and enhance decision-making . In Promptflow, each flow is defined in a `flow.dag.yaml` file, which acts as the definitive blueprint for our AI logic—specifying all operations and their sequence, inputs and outputs, and data dependencies.
 
-  * [Data (`data/`)](#data-data)
+---
 
-  * [Flows (`flows/`)](#flows-flows)
+## Understanding the Workflow: The DAG
 
-  * [Prompts (`prompts/`)](#prompts-prompts)
+Promptflow represents workflows as **Directed Acyclic Graphs (DAGs)**—think of these as one-way flowcharts where data moves from inputs through a sequence of nodes to a final output. This structure makes our backend logic:
+- Easy to visualize and reason about
+- Modular and reusable
+- Reliable and debuggable
 
-  * [Scripts (`scripts/`)](#scripts-scripts)
+### Our Workflow: Example DAG
 
-  * [Tools (`tools/`)](#tools-tools)
+Key elements of our primary flow see [`flows/chat_flow/flow.dag.yaml`](flows/chat_flows/flow.dag.yaml):
 
-  * [Utilities (`utilities/`)](#utilities-utilities)
+- **Inputs:**  
+  - `system_prompt_id`: Chooses the desired task or prompt strategy
+  - `chat_history`: Supplies context or previous conversation turns
+  - `llm_model_id`: Selects which large language model to use
 
-  * [Results & Reports (`results/`, `prepared_reports/`)](#results--reports-results-prepared_reports)
+- **Nodes:**  
+  - `prompt_selector_node`: Dynamically selects the correct prompt template based on `system_prompt_id`
+  - `llm_chat_node`: Sends the prompt (plus user/chat context) to the specified LLM and collects the model response
 
-* [Usage](#usage)
+- **Data Flow:**  
+  Data flows explicitly from node to node as mapped in `flow.dag.yaml`. For example, the chosen prompt from `prompt_selector_node` feeds directly as input into `llm_chat_node`, ensuring an auditable, reproducible, and adaptable sequence of operations.
 
-  * [Running Flows](#running-flows)
-
-  * [Generating Reports](#generating-reports)
-
-  * [Deploying Flows](#deploying-flows)
-
-## Context within `fas_llm_apps`
-
-The `digital_latin_flows` is a key sub-project of `fas_llm_applications`. While `fas_llm_applications` provides the foundational infrastructure (like connection management and the overall development environment), this directory contains the domain-specific logic, data, and PromptFlow definitions pertinent to Latin text analysis.
-
-For setting up the development environment (Dev Container, Codespaces) and managing LLM connections, please refer to the main [`fas_llm_applications/README.md`](../README.md) document.
+---
 
 ## Components
 
-### Data (`data/`)
-
-This folder contains the datasets and input files used by the PromptFlows and scripts within the `digital_latin_flows`.
-
-* `*.jsonl`: JSON Lines files, often used for batch processing with PromptFlow, where each line is a separate input record.
-
-* `*.csv`: CSV files, typically used for variant testing, specific test cases, or structured input data.
-
-* `*.txt`: Various text files, which may include raw texts, logs from previous runs, or other unstructured data.
-
 ### Flows (`flows/`)
-
-This directory contains the PromptFlow definitions (`flow.dag.yaml`) and their associated Python nodes and prompt templates. Each subdirectory represents a distinct PromptFlow designed for a specific task.
-
-* **`basic_claude_llm_flow/`**: An example PromptFlow demonstrating interaction with AWS Claude models, including its custom Python invocation node and Jinja2 prompt template.
-
-* **`basic_deepseek_llm_flow/`**: Similar to the Claude flow, but configured to use Deepseek models.
-
-* **`basic_gemini_llm_flow/`**: An example PromptFlow demonstrating interaction with Google Gemini models, with its specific Python invocation node and Jinja2 prompt template.
-
-* **`multi_llm_flow/`**: A more advanced flow showcasing how to integrate and potentially orchestrate calls to multiple LLMs within a single PromptFlow.
-
-* **`multi_llm_parallel_flow/`**: Demonstrates the execution of LLM calls in parallel within a PromptFlow, utilizing a custom multi-LLM invocation node.
-
-* **`flow.dag.yaml`**: The core YAML definition file for each PromptFlow, describing its nodes, inputs, outputs, and connections.
-
-* **`dl_prompt_node.jinja2`**: Jinja2 template files used within the PromptFlows to dynamically construct prompts for LLMs.
+Houses Promptflow DAG definitions and their associated Python nodes and prompt templates. Each subdirectory contains a distinct flow for a particular AI task—ranging from simple LLM calls to advanced multi-model orchestration.
 
 ### Prompts (`prompts/`)
+Organizes Jinja2 templates for both "system" and "user" prompts. This modular approach enables rapid prompt engineering and easy adaptation of prompts as models and pedagogical needs evolve.
 
-This structured collection holds Jinja2 template files for various system and user prompts used across the LLM applications. This separation allows for easy iteration and management of prompt engineering.
-
-* **`system/`**: Contains system-level prompt templates that define the LLM's persona, role, or general instructions (e.g., `general_neutral_system.jinja2`, `sophisticated_qa_system.jinja2`).
-
-* **`user/`**: Contains user-facing prompt templates that structure the user's input or questions for the LLMs (e.g., `basic_qa_user.jinja2`, `u1.0_virgil_user.jinja2`).
-
-### Scripts (`scripts/`)
-
-This directory contains Python scripts for specific operations related to the `digital_latin_flows`.
-
-* **`generate_prepared_reports.py`**: A script used to process raw LLM run results and generate more polished, human-readable Markdown reports.
-
-* **`generate_report.py`**: A core script that likely handles the detailed logic for creating individual LLM evaluation reports.
-
-* **`load_env_to_shell.py`**: A helper script, primarily for local environments outside of a Dev Container, to load `.env` variables into the shell.
+  - `system/`: General role instructions/persona prompts (e.g., `general_neutral_system.jinja2`)
+  - `user/`: User-facing prompt structures (e.g., `basic_qa_user.jinja2`)
 
 ### Tools (`tools/`)
 
-This folder contains custom Python tools that can be integrated as nodes within PromptFlows.
+This directory contains custom Python modules that extend core Promptflow node functionality. Tools are integrated directly as nodes in Promptflow DAGs, enabling sophisticated and reusable logic within a workflow.
 
-* **`prompt_selector_tool.py`**: A custom tool designed to select or dynamically choose a prompt based on certain input criteria, enhancing prompt engineering flexibility.
+- **`prompt_selector_tool.py`**:  
+  Implements dynamic prompt selection for the workflow. Given parameters such as `system_prompt_id`, this tool programmatically chooses the appropriate prompt template, enabling context-sensitive, flexible prompt engineering. This logic lets flows adapt to a variety of tasks and user inputs without manual intervention or hardcoding. This tool levarages the `prompt_registry_util.py` in the Utilities section below.
+
+(You can add descriptions for additional tools here as they are developed.)
 
 ### Utilities (`utilities/`)
 
-Contains general utility modules that support the `digital_latin_flows`'s functionality.
+This folder provides general-purpose Python utilities that support and streamline the backend workflow. Utilities typically encapsulate logic that is shared across multiple nodes, nodes and scripts, or other code components.
 
-* **`prompt_registry_util.py`**: A utility for managing and accessing the various prompt templates defined in the `prompts/` directory.
+- **`prompt_registry_util.py`**:  
+  Centralizes the management of prompt templates used throughout the system. This utility can:
+  - Find and retrieve Jinja2 prompt templates from the `prompts/` directory,
+  - **Register new templates**
+  - Provide lookup or caching to accelerate repeated prompt accesses during session runtime.
 
-### Results & Reports (`results/`, `prepared_reports/`)
+Utilities are designed to increase efficiency, ensure consistent prompt usage, and reduce code duplication throughout the backend codebase.
 
-For understanding and debugging during the development phase, all generated run results and reports are currently tracked directly within this repository.
+---
 
-* **`results/`**: Stores the raw JSON outputs and structured data from PromptFlow runs. Each file (e.g., `llm_report_00002.json`) represents the detailed output of a specific LLM interaction or batch run.
+## Development and Deployment
 
-* **`prepared_reports/`**: Contains the generated Markdown reports (e.g., `llm_report_00002.md`, `llm_report_smoke_test_2_run_1_test_case_1.md`), which are a more readable summary of the LLM outputs and evaluations. `prepared_report_manifest_*.md` files likely summarize multiple reports.
+Promptflow supports the full development lifecycle:
 
-## Usage
+- **Local Development:**  
+  Develop and test flows using the Promptflow extension for Visual Studio Code. The visual DAG editor streamlines rapid iteration and debugging. The use of devcontainers for the [VS Code Extension](https://microsoft.github.io/promptflow/how-to-guides/develop-a-dag-flow/quick-start.html#quick-start) functionality means the editor is functional using a local VS Code instance or the VS Code Editor that can be launched in [Github Codespaces](https://github.com/features/codespaces)
 
-To utilize the PromptFlows within this project, ensure you have followed the setup instructions in the main [`fas_llm_apps/README.md`](../README.md), especially regarding Dev Containers and PromptFlow connection setup.
+- **Deployment:**  
+  Build stable flows into Docker containers using the Promptflow CLI. This bundles all dependencies and logic, ensuring consistent execution anywhere (e.g., dev, staging, or production). More on deploying flows to Docker [here](https://microsoft.github.io/promptflow/how-to-guides/deploy-a-flow/deploy-using-docker.html)
 
-### Running Flows
-
-Once your development environment is set up and PromptFlow connections are active, you can run individual flows or batch runs.
-
-For example, to test a basic Gemini LLM flow:
-
-```
-# Navigate to the fas_llm_apps root
-cd /path/to/fas_llm_applications
-
-# Assuming your dev container is running and PromptFlow is installed
-# and connections are set up.
-
-# You might use a script or the PromptFlow CLI directly
-# Example using pf CLI to test a flow (syntax may vary slightly based on PromptFlow version):
-pf flow test --flow digital_latin_flows/flows/basic_gemini_llm_flow --inputs your_input_key="Your Latin text here."
-
-# To run a batch test with data from the 'data' folder:
-pf flow run create --flow digital_latin_flows/flows/basic_claude_llm_flow --data digital_latin_flows/data/batch1.jsonl
-
-```
-
-(Refer to PromptFlow documentation for precise CLI commands and options.)
-
-### Generating Reports
-
-After running your PromptFlows, you can use the scripts in `scripts/` to generate reports.
-
-For example, to generate prepared reports from the `results/` directory:
-
-```
-# Navigate to the digital_latin_flows scripts directory
-cd /path/to/fas_llm_apps/digital_latin_flows/scripts
-
-# Run the script to generate prepared reports
-python generate_prepared_reports.py
-
-```
-
-This will process the JSON results and save Markdown reports in the `prepared_reports/` directory.
-
-## Deploying Flows
-
-The `promptflow` repository is intended for building and testing flows. Deployment of flows into production applications should follow these steps:
-
-1. **Development and Testing:**
-   - Use the `promptflow` repo for all flow development, testing, and iteration.
-
-2. **Exporting for Deployment:**
-   - Use the `pf` command or the PromptFlow Dockerfile to export your flow into the `dockerized-flow` folder within your project.
-
-3. **Deployment Preparation:**
-   - You will typically deploy the flow into a containerized environment (e.g., via Terraform and ECS).
-   - In your deployment repo (e.g., `digital-latin`), manually copy the following from the `digital_latin_flows` (or `digital_latin_flows`) directory to the `backend/` directory:
-     - The entire `digital_latin_flows` directory (containing the core flow code).
-     - The following files from the `dockerized-flow` directory, placed parallel to `digital_latin_flows` in `backend/`:
-       - `requirements.txt`
-       - `.env.example`
-       - `.env` (for local development)
-       - `Dockerfile` (as generated)
-       - `start.sh`
-   - You may then delete the following directories from `digital_latin_flows` to keep only the core flow functionality:
-     - `data/`
-     - `evaluation/`
-     - `prepared_reports/`
-     - `results/`
-   - Also copy the `_connections_manager_` directory under `backend/`, parallel to `digital_latin_flows`.
-
-4. **Directory Structure:**
-   - Your `backend/` directory in the deployment repo should look like:
-     ```
-     backend/
-       digital_latin_flows/
-         (core flow code, prompts, tools, utilities, etc.)
-       _connections_manager_/
-         (...)
-       requirements.txt
-       .env.example
-       .env
-       Dockerfile
-       start.sh
-     ```
-   - This structure maintains a similar organization and relative paths as in the original `promptflow` repo, ensuring smooth operation and maintainability.
-
-5. **Deployment:**
-   - Deploy the containerized flow using your infrastructure tooling (e.g., Terraform, ECS, etc.).
-
-This process ensures that only the necessary code and configuration for running the flow in production are included, while maintaining a consistent and maintainable structure between development and deployment environments.
+- **Repository Structure:**  
+  - All live flows: `digital_latin_flows/flows/`
+  - Prompts, tools, utilities, and scripts organized in subfolders for maintainability
