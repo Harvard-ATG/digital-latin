@@ -51,12 +51,14 @@ The application consists of three services that start together:
 
 ## Usage
 
+For detailed usage instructions, see [User Guide](user_guide.md). However,the general user flow is outlined below:
+
 1. Select a simplification level (Level 1 or Level 2) in the sidebar
 2. Enter your Latin passage in the chat
 3. Receive a simplified version with detailed breakdown
 4. Sessions are saved automatically to PostgreSQL
 
-For detailed usage instructions, see [User Guide](user_guide.md).
+![Digital Latin User Flow](digital_latin_user_flow.png)
 
 ## Architecture
 
@@ -80,20 +82,23 @@ For detailed usage instructions, see [User Guide](user_guide.md).
 ```
 digital-latin/
 ├── frontend/                    # Streamlit UI service
-│   ├── app/src/core/           # Application code
-│   │   ├── streamlit_ui_chatapi.py
+│   ├── app/src/core/            # Application code
+│   │   ├── streamlit_ui_chatapi.py (Front end Entry Point)
 │   │   ├── flow_api_endpoint.py
 │   │   └── session_db_postgres.py
+|.  |.  └── entrypoint.sh
 │   ├── Dockerfile              # Frontend container
 │   └── requirements.txt        # Python dependencies
 ├── backend/                     # Flow API service
-│   ├── digital_latin_flows/    # AI processing flows
-│   ├── _connections_manager_/  # API connections
+│   ├── digital_latin_flows/    # AI processing flows (Backend entry point /flows/chat_flow/nodes/llm_chat_invocation.py)
 │   ├── Dockerfile              # Backend container
 │   └── start.sh                # Service startup script
+└── user_guide/                 # End-user documentation
+│   ├── image_asset.png         # Images assets for use in User Guide
+│   └── user_guide.md           # Finalized user guide
 ├── .env.example                # Environment template
 ├── docker-compose.yml    # Local development
-└── user_guide.md               # End-user documentation
+
 ```
 
 ## Configuration
@@ -150,6 +155,38 @@ docker-compose -f docker-compose.yml down -v
 </details>
 
 <details>
+<summary><strong>Entrypoints</strong></summary>
+
+The application has distinct entry points for each service, managed by their respective Dockerfiles and startup scripts. Understanding these points is crucial for debugging and modifying the application's core behavior.
+
+### Frontend Service
+
+The frontend's entry point is defined in its Dockerfile and handled by an entrypoint.sh script. This script executes a Python file that serves the Streamlit UI, effectively starting the user-facing application.
+
+    Location: `frontend/app/src/core/entrypoint.sh`
+
+    Command: `streamlit run streamlit_ui_chatapi.py`
+
+#### Backend Service
+
+The backend's entry point is the start.sh script, which launches the Promptflow service. This script is responsible for starting the API server that exposes the machine learning flows.
+
+    Location: `backend/start.sh`
+
+    Command: `pf flow serve --source /backend/digital_latin_flows --host 0.0.0.0 --port 8080 --api-key YOUR_API_KEY`
+
+    *Other Key files*:
+    
+    -`llm_chat_invocation.py`: This file acts as the orchestrator. It's the flow's entry point, which uses the prompt_registry to get a template, the prompt_tool to render it, and the llm_implementation to send the final prompt to the Gemini API.
+
+    -`prompt_selector_tool.py`: This is a utility for template rendering. It takes a prompt template and dynamic variables and combines them into a single, complete prompt string.
+
+    -`prompt_registry.py`: A centralized Python dictionary that maps a system_prompt_id to its corresponding template and components. This is where you'd add or modify new prompts, making prompt management easy.
+
+
+</details>
+
+<details>
 <summary><strong>Database Access</strong></summary>
 
 
@@ -167,8 +204,10 @@ SELECT * FROM sessions; # View all sessions
 <details>
 <summary><strong>API Testing</strong></summary>
 
+Test backend flow API directly via curl request or Postman
+
 ```bash
-# Test backend flow API directly
+# Single turn interaction example
 curl http://localhost:8080/score \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,6 +222,43 @@ curl http://localhost:8080/score \
     ]
   }'
 ```
+```bash
+# Multi-turn interaction example
+curl --location 'http://localhost:8080/score' \
+--header 'Content-Type: application/json' \
+--data '{
+    "dynamic_template_variables": {},
+    "llm_model_id": "gemini",
+    "system_prompt_id": "S2.3C",
+    "chat_history": [
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "text": "Eodem Appio auctore Potitia gens, cuius ad Aram Maximam Herculis familiare sacerdotium fuerat, servos publicos ministerii delegandi causa sollemnia eius sacri docuerat. Traditur inde, dictu mirabile et quod dimovendis statu suo sacris religionem facere posset, cum duodecim familiae ea tempestate Potitiorum essent, puberes ad triginta, omnes intra annum cum stirpe exstinctos; nec nomen tantum Potitiorum interisse sed censorem etiam memori deum ira post aliquot annos luminibus captum."
+                }
+            ]
+        },
+        {
+            "role": "model",
+            "parts": [
+                {
+                    "text": "Here is the simplified passage:\n\nAppius auctor huius rei fuit. Gens Potitia sacerdotium familiae suae Herculis ad Aram Maximam habebat. Potitii servos publicos ritus sacros docuerunt, quod munus suum servis mandare volebant.\nHomines narrant fabulam mirabilem."
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "text": "Were any infinitives changed to finite perfect tense verbs, interiit and factus est?"
+                }
+            ]
+        }
+    ]
+}'
+```
+
 </details>
 
 <details>
