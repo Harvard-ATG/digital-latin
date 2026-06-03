@@ -7,3 +7,4 @@ jinja2
 sentry-sdk
 markdown2
 psycopg2-binary
+boto3

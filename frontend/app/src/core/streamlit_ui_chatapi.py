@@ -11,7 +11,8 @@ import traceback
 import re
 import streamlit as st
 from pathlib import Path
-from flow_api_endpoint import call_flow_score_endpoint, convert_chat_messages_to_chat_history
+from flow_api_endpoint import stream_response, convert_chat_messages_to_chat_history
+from prompt_builder import build_system_prompt
 from datetime import datetime
 from jinja2 import Template
 from PIL import Image
@@ -578,9 +579,28 @@ with st.sidebar:
     )
     st.write("---")
     st.header("Settings")
-    # WHY: Allowed models are set via environment variable for flexibility across deployments.
-    allowed_models_env = os.getenv("GOOGLE_ALLOWED_MODELS", "gemini-2.5-pro")
+    # ALLOWED_MODELS replaces GOOGLE_ALLOWED_MODELS once rolled out to all environments and param stores.
+    allowed_models_env = os.getenv("ALLOWED_MODELS") or os.getenv("GOOGLE_ALLOWED_MODELS", "gemini-2.5-pro")
     allowed_models = [m.strip() for m in allowed_models_env.split(",") if m.strip()]
+
+    MODEL_DISPLAY_NAMES = {
+        "gemini-2.5-pro": "Google | Gemini 2.5 Pro (Default)",
+        "gemini-3.1-pro-preview": "Google | Gemini 3.1 Pro",
+        "gemini-3.5-flash": "Google | Gemini 3.5 Flash",
+        "gemini-2.5-flash": "Google | Gemini 2.5 Flash",
+        "us.anthropic.claude-sonnet-4-6": "Anthropic | Claude Sonnet 4.6",
+        "us.anthropic.claude-opus-4-6-v1": "Anthropic | Claude Opus 4.6",
+        "gpt-5.4": "OpenAI | GPT-5.4",
+    }
+
+    # Build grouped options list (Gemini first, then Claude, then OpenAI)
+    def _build_grouped_models(models):
+        gemini = [m for m in models if "gemini" in m.lower()]
+        claude = [m for m in models if "anthropic" in m or "claude" in m.lower()]
+        openai = [m for m in models if m not in gemini and m not in claude]
+        return gemini + claude + openai
+
+    grouped_models = _build_grouped_models(allowed_models)
 
     # WHY: Ensure model and level are always initialized, even after session clears or loads.
     if "selected_model_chatapi" not in st.session_state or st.session_state.selected_model_chatapi not in allowed_models:
@@ -679,12 +699,40 @@ with st.sidebar:
     #         st.success('Session saved!')
     # --- END: Save Current Session Button ---
 
-    # Sidebar footer with model information and powered by Gemini.
+    # Sidebar model selector and footer
     st.markdown("---")
-    st.markdown("<p style='color: black; font-size: 0.75em; opacity: 0.6;'>Powered by Gemini</p>", unsafe_allow_html=True)
-    selected_model = "gemini-2.5-pro"
+    model_disabled = bool(st.session_state.get("chat_messages"))
+
+    # Only show real models in the selectbox (no headers)
+    selectable_models = [m for m in grouped_models if not m.startswith("_header_")]
+    default_idx = selectable_models.index(st.session_state.selected_model_chatapi) if st.session_state.selected_model_chatapi in selectable_models else 0
+
+    selected_model = st.selectbox(
+        "Select a model",
+        options=selectable_models,
+        index=default_idx,
+        format_func=lambda model_id: MODEL_DISPLAY_NAMES.get(model_id, model_id),
+        key="model_selector",
+        disabled=model_disabled,
+        help="Select the AI model to use for simplification. Locked after first message.",
+    )
     st.session_state["selected_model_chatapi"] = selected_model
-    st.markdown(f"<p style='color: black; font-size: 0.75em; opacity: 0.6;'>Model: {selected_model}</p>", unsafe_allow_html=True)
+    if model_disabled:
+        st.caption("To change model, start a new session.")
+    display_name = MODEL_DISPLAY_NAMES.get(selected_model, selected_model).strip()
+    st.markdown(f"<p style='color: black; font-size: 0.75em; opacity: 0.6;'>Active model: {display_name}</p>", unsafe_allow_html=True)
+
+    # Reasoning level toggle
+    if "high_reasoning" not in st.session_state:
+        st.session_state["high_reasoning"] = True
+    high_reasoning = st.toggle(
+        "High reasoning",
+        value=st.session_state["high_reasoning"],
+        key="reasoning_toggle",
+        disabled=model_disabled,
+        help="Enable deep reasoning for more thorough analysis. Disable for faster, simpler responses.",
+    )
+    st.session_state["high_reasoning"] = high_reasoning
 
 # --- MAIN AREA ---
 # The main area displays the chat interface, including chat history and the chat input box.
@@ -1069,69 +1117,52 @@ if st.session_state.get("_rerun_from_load", False):
     # The next action will be user input or Streamlit's idle rerun.
 
 # --- LLM CALL TRIGGER BLOCK: MUST BE AFTER ALL UI RENDERING ---
-# This is placed at the end so that all UI (chat history, thinking state) renders first,
-# then the synchronous LLM call executes without blocking the UI display
+# Streams tokens directly from the Gemini API (no backend involved)
 if st.session_state.get("should_call_llm", False) or (st.session_state.get("llm_cancelled", False) and st.session_state.get("llm_busy", False)):
-    # Clear the trigger flag to prevent duplicate calls
     if st.session_state.get("should_call_llm", False):
         st.session_state.should_call_llm = False
-    
+
     try:
-        # Check if request was cancelled before we even start
         if st.session_state.get("llm_cancelled", False):
-            logger.debug("LLM request was cancelled, maintaining stopping state until cleanup")
-            # Keep the stopping state active - don't make a new HTTP call
-            # The UI will show "Stopping..." until the finally block runs
-            pass  # Continue to finally block for cleanup
+            logger.debug("LLM request was cancelled, skipping to cleanup")
         else:
-            # Make the LLM call
             selected_model = st.session_state.get("selected_model_chatapi", "gemini-2.5-pro")
-            current_level = st.session_state.get("level_chatapi", "Select a level")
+            current_level = st.session_state.get("level_chatapi", "Level 1")
             messages = [m for m in st.session_state["chat_messages"]]
+            chat_history = convert_chat_messages_to_chat_history(messages)
+            system_prompt = build_system_prompt(current_level)
 
-            logger.debug(f"Attempt to call /score endpoint with model: {selected_model}, level: {current_level}")
-            
-            # Mark that an HTTP call is in progress
+            high_reasoning = st.session_state.get("high_reasoning", True)
+            logger.debug(f"Streaming with model: {selected_model}, level: {current_level}, high_reasoning: {high_reasoning}")
             st.session_state.http_call_in_progress = True
-            
-            response_content = call_flow_score_endpoint(
-                chat_history=convert_chat_messages_to_chat_history(messages),
-                level=current_level,
-                llm_model_id=selected_model,
-            )
-            logger.debug(f"Response from /score endpoint: {response_content}")
 
-            # Mark that HTTP call is complete
+            def _streaming_generator():
+                for chunk in stream_response(chat_history=chat_history, model_id=selected_model, system_prompt=system_prompt, high_reasoning=high_reasoning):
+                    if st.session_state.get("llm_cancelled", False):
+                        logger.debug("LLM cancelled mid-stream, stopping")
+                        return
+                    yield chunk
+
+            with st.chat_message("assistant"):
+                full_response = st.write_stream(_streaming_generator())
+
             st.session_state.http_call_in_progress = False
 
-            # Check if the request was cancelled while we were waiting for the response
             if st.session_state.get("llm_cancelled", False):
-                logger.debug("LLM request was cancelled, ignoring response")
-            else:
-                # No duplicate check for the last assistant message - Check if the last message is an assistant
-                # response with the same content
-                if not (
-                    st.session_state["chat_messages"]
-                    and st.session_state["chat_messages"][-1]["role"] == "assistant"
-                    and st.session_state["chat_messages"][-1]["content"].strip() == response_content["content"].strip()
-                ):
-                    st.session_state["chat_messages"].append(response_content)
-                    session_db_id = st.session_state.get("session_db_id")
-                    if session_db_id:
-                        session_db.log_message(session_db_id, "assistant", response_content["content"])
-                else:
-                    # Session DB logging is not needed if the last message is a duplicate
-                    logger.debug("Duplicate assistant message detected, not logging to session DB.")
-                    pass
+                logger.debug("Stream was cancelled, ignoring partial response")
+            elif full_response and full_response.strip():
+                st.session_state["chat_messages"].append({"role": "assistant", "content": full_response})
+                session_db_id = st.session_state.get("session_db_id")
+                if session_db_id:
+                    session_db.log_message(session_db_id, "assistant", full_response)
+
     except Exception as e:
-        error_info = f"Error: {e}\nRaw object type: {type(e.__context__ if e.__context__ else 'Unknown')}\nRaw object details: {response_content if 'response_content' in locals() else 'Not available'}"
+        error_info = f"Error: {e}"
         st.session_state["chat_messages"].append({"role": "assistant", "content": error_info})
-        # Mark that HTTP call is complete even on error
         st.session_state.http_call_in_progress = False
     finally:
-        # Always clean up state, regardless of whether call was made or cancelled
         logger.debug("LLM block completed - cleaning up state flags")
-        st.session_state.llm_busy = False  # Not busy after response
-        st.session_state.llm_cancelled = False  # Clear cancellation flag
-        st.session_state.http_call_in_progress = False  # Ensure HTTP flag is cleared
-        st.rerun()  # Rerun to display the new assistant message and re-enable the button
+        st.session_state.llm_busy = False
+        st.session_state.llm_cancelled = False
+        st.session_state.http_call_in_progress = False
+        st.rerun()
