@@ -2,7 +2,6 @@ import os
 import re
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "prompt_data")
-TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "../../../../backend/digital_latin_flows/tooling/prompts/system")
 
 LEVEL_TO_TEMPLATE = {
     "Level 1": "s1.3B_level1_version3B_system.jinja2",
@@ -33,10 +32,7 @@ def _load_logeion_words():
 def _load_template(level: str) -> str:
     if level not in _template_cache:
         template_file = LEVEL_TO_TEMPLATE.get(level)
-        template_path = os.path.join(TEMPLATE_DIR, template_file)
-        # Try backend path first, fall back to bundled copy in prompt_data
-        if not os.path.exists(template_path):
-            template_path = os.path.join(DATA_DIR, template_file)
+        template_path = os.path.join(DATA_DIR, template_file)
         with open(template_path, "r") as f:
             raw = f.read()
         # Strip jinja2 comments and convert {{ var }} to {var} for str.format()

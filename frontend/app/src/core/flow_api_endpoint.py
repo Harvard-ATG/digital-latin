@@ -176,15 +176,15 @@ def stream_claude_response(chat_history: list, model_id: str, system_prompt: str
     aws_secret_key = os.environ.get("AWS_AI_WORKFLOW_CORE_DEV_SECRET")
     aws_region = os.environ.get("AWS_DEFAULT_REGION", DEFAULT_AWS_REGION)
 
-    if not aws_access_key or not aws_secret_key:
-        raise ValueError("AWS credentials (AWS_AI_WORKFLOW_CORE_DEV_ID/SECRET) not set in environment.")
-
-    client = boto3.client(
-        "bedrock-runtime",
-        region_name=aws_region,
-        aws_access_key_id=aws_access_key,
-        aws_secret_access_key=aws_secret_key,
-    )
+    if aws_access_key and aws_secret_key:
+        client = boto3.client(
+            "bedrock-runtime",
+            region_name=aws_region,
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+        )
+    else:
+        client = boto3.client("bedrock-runtime", region_name=aws_region)
 
     # Convert Gemini-format chat_history to Bedrock messages format
     messages = []
