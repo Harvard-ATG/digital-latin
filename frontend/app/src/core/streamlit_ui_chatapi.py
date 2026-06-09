@@ -587,8 +587,6 @@ with st.sidebar:
         "gemini-2.5-pro": "Google | Gemini 2.5 Pro (Default)",
         "gemini-3.1-pro-preview": "Google | Gemini 3.1 Pro",
         "gemini-3.5-flash": "Google | Gemini 3.5 Flash",
-        "gemini-2.5-flash": "Google | Gemini 2.5 Flash",
-        "us.anthropic.claude-sonnet-4-6": "Anthropic | Claude Sonnet 4.6",
         "us.anthropic.claude-opus-4-6-v1": "Anthropic | Claude Opus 4.6",
         "gpt-5.4": "OpenAI | GPT-5.4",
     }
@@ -715,12 +713,13 @@ with st.sidebar:
         key="model_selector",
         disabled=model_disabled,
         help="Select the AI model to use for simplification. Locked after first message.",
+        filter_mode=None,
     )
     st.session_state["selected_model_chatapi"] = selected_model
     if model_disabled:
         st.caption("To change model, start a new session.")
     display_name = MODEL_DISPLAY_NAMES.get(selected_model, selected_model).strip()
-    st.markdown(f"<p style='color: black; font-size: 0.75em; opacity: 0.6;'>Active model: {display_name}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: black; font-size: 0.75em; opacity: 0.6;'>Powered by {display_name}</p>", unsafe_allow_html=True)
 
     # Reasoning level toggle
     if "high_reasoning" not in st.session_state:
@@ -852,10 +851,10 @@ textarea[data-testid*="chat_input_text"] { tab-index: 11 !important; }
 button[data-testid*="send_chat_btn"] { tab-index: 12 !important; }
 button[data-testid*="stop_chat_btn"] { tab-index: 11 !important; }
 */
-/* Focus indicators */
-*:focus {
-    outline: 3px solid #007acc !important;
-    outline-offset: 2px !important;
+/* Remove all focus outlines */
+*:focus, *:focus-visible, *:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
 }
 /* Style info alerts to have black text instead of default blue/gold */
 div[data-testid="stAlert"] div[data-testid="stMarkdownContainer"] p {
@@ -873,7 +872,7 @@ div.st-emotion-cache-1vo6xi6:has(div[data-testid="stCaptionContainer"]) p {
     font-size: 0.875em !important;
     color: black !important;
 }
-             
+
 </style>  
 """, unsafe_allow_html=True)
 
@@ -921,6 +920,9 @@ for idx, msg in enumerate(st.session_state["chat_messages"]):
                 return re.sub(r'`([^`]+)`', r"<span style='color:#000000; font-weight:400;'>\1</span>", text)
             styled_content = style_code(msg['content'].replace('\n', '  \n'))
             st.markdown(styled_content, unsafe_allow_html=True)
+
+# Reserve a slot for streaming response — renders above the input area
+_streaming_placeholder = st.empty()
 
 # --- RESTORE THE CHAT INPUT AREA ---
 # The chat input box is always shown at the bottom, unless a level is not selected.
@@ -1143,8 +1145,9 @@ if st.session_state.get("should_call_llm", False) or (st.session_state.get("llm_
                         return
                     yield chunk
 
-            with st.chat_message("assistant"):
-                full_response = st.write_stream(_streaming_generator())
+            with _streaming_placeholder.container():
+                with st.chat_message("assistant"):
+                    full_response = st.write_stream(_streaming_generator())
 
             st.session_state.http_call_in_progress = False
 

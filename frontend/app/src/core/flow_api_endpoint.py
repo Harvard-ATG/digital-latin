@@ -172,9 +172,9 @@ def stream_claude_response(chat_history: list, model_id: str, system_prompt: str
     Stream tokens from Claude via AWS Bedrock converse_stream API.
     Yields text chunks as they arrive.
     """
-    aws_access_key = os.environ.get("AWS_AI_WORKFLOW_CORE_DEV_ID")
-    aws_secret_key = os.environ.get("AWS_AI_WORKFLOW_CORE_DEV_SECRET")
-    aws_region = os.environ.get("AWS_DEFAULT_REGION", DEFAULT_AWS_REGION)
+    aws_access_key = (os.environ.get("AWS_AI_WORKFLOW_CORE_DEV_ID") or "").strip()
+    aws_secret_key = (os.environ.get("AWS_AI_WORKFLOW_CORE_DEV_SECRET") or "").strip()
+    aws_region = (os.environ.get("AWS_DEFAULT_REGION") or DEFAULT_AWS_REGION).strip()
 
     if aws_access_key and aws_secret_key:
         client = boto3.client(
