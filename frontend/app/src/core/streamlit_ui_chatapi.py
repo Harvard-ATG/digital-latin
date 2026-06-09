@@ -380,62 +380,11 @@ def check_auth():
             st.error("Invalid username or password")
 
 
-if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
-    # The instructions for the form
-    instructions_html = """
-    <div id="login-instructions" class="sr-only">
-        pAIdagogue Login Form Instructions: Please enter your credentials to access the Latin text simplification tool.
-        This form has two fields, Username and Password, and a Login button.
-        Use the Tab key to navigate between fields.
-    </div>
-    """
-    st.markdown(instructions_html, unsafe_allow_html=True)
-    st.title("pAIdagogue Login")
-    st.markdown("Please enter your credentials to access the Latin text simplification tool.")
-
-    # Add CSS for login screen focus order and all accessibility styles BEFORE any form elements
-    st.markdown("""
-    <style>
-    /* NOTE: The following original CSS attempts to control tab order using `tabindex` inside CSS rules. */
-    /* This does NOT work because tabindex must be an HTML attribute, not a CSS property. */
-    /* Keeping these here commented for historical/reference purposes. */
-    /*
-    input[data-testid*="username_input"] { tabindex: 1 !important; }
-    input[data-testid*="password_input"] { tabindex: 2 !important; }
-    button[aria-label="Show password text"] { tabindex: 3 !important; }
-    button[aria-label*="password"] { tabindex: 3 !important; }
-    div[data-testid*="password_input"] ~ div button { tabindex: 3 !important; }
-    div[data-testid*="password_input"] button { tabindex: 3 !important; }
-    div[data-testid="stElementContainer"].st-key-login_button button[data-testid="stBaseButton-secondary"] { tabindex: 4 !important; }
-    button[data-testid="stBaseButton-secondary"]:has(div[data-testid="stMarkdownContainer"] p:contains("Login")) { tabindex: 4 !important; }
-
-    / * CSS-only fallback that attempted to hide duplicate buttons (kept commented) * /
-    / *
-    section[data-testid="stMain"] div[data-testid="stElementContainer"] button[data-testid="stBaseButton-secondary"] {
-        display: none !important;
-    }
-    section[data-testid="stMain"] div[data-testid="stElementContainer"].st-key-login_button button[data-testid="stBaseButton-secondary"] {
-        display: inline-flex !important;
-    }
-    section[data-testid="stMain"] button[aria-label*="password"],
-    section[data-testid="stMain"] div[data-testid*="password_input"] button {
-        display: inline-flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-    }
-    */
-
-    /* Active styles (non-tabindex related) */
-    *:focus { outline: 3px solid #007acc !important; outline-offset: 2px !important; }
-    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { display: none !important; }
-    .stMarkdown h1 a, .stMarkdown h2 a, .stMarkdown h3 a { display: none !important; }
-    </style>
-    """, unsafe_allow_html=True)
-
-    check_auth()
-
-    st.stop()
+# --- LOGIN TEMPORARILY DISABLED FOR DEVELOPMENT ---
+# if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+#     check_auth()
+#     st.stop()
+st.session_state["authenticated"] = True
 
 if st.session_state.get("clear_chat_input", False):
     st.session_state["chat_input_text"] = ""
@@ -723,7 +672,7 @@ with st.sidebar:
 
     # Reasoning level toggle
     if "high_reasoning" not in st.session_state:
-        st.session_state["high_reasoning"] = True
+        st.session_state["high_reasoning"] = False
     high_reasoning = st.toggle(
         "High reasoning",
         value=st.session_state["high_reasoning"],
@@ -921,7 +870,7 @@ for idx, msg in enumerate(st.session_state["chat_messages"]):
             styled_content = style_code(msg['content'].replace('\n', '  \n'))
             st.markdown(styled_content, unsafe_allow_html=True)
 
-# Reserve a slot for streaming response — renders above the input area
+# Placeholder for streaming response — above the input area
 _streaming_placeholder = st.empty()
 
 # --- RESTORE THE CHAT INPUT AREA ---
@@ -945,8 +894,6 @@ if "chat_input_text" not in st.session_state:
 
 if chat_enabled:
     # --- MOVE THE SPINNER/CAPTION HERE, RIGHT BEFORE THE INPUT ---
-    # This ensures the caption is al sways right above the input, not above the chat history.
-    # This may not be necessary if the spinner is only shown during LLM calls.
     if st.session_state.get("llm_busy", False):
         # Show different messages based on whether request was cancelled
         if st.session_state.get("llm_cancelled", False):
@@ -1134,7 +1081,7 @@ if st.session_state.get("should_call_llm", False) or (st.session_state.get("llm_
             chat_history = convert_chat_messages_to_chat_history(messages)
             system_prompt = build_system_prompt(current_level)
 
-            high_reasoning = st.session_state.get("high_reasoning", True)
+            high_reasoning = st.session_state.get("high_reasoning", False)
             logger.debug(f"Streaming with model: {selected_model}, level: {current_level}, high_reasoning: {high_reasoning}")
             st.session_state.http_call_in_progress = True
 
@@ -1145,9 +1092,17 @@ if st.session_state.get("should_call_llm", False) or (st.session_state.get("llm_
                         return
                     yield chunk
 
-            with _streaming_placeholder.container():
-                with st.chat_message("assistant"):
-                    full_response = st.write_stream(_streaming_generator())
+            chunks = []
+            streaming_container = None
+            streaming_text = None
+            for chunk in _streaming_generator():
+                chunks.append(chunk)
+                if streaming_container is None:
+                    streaming_container = _streaming_placeholder.container()
+                    streaming_msg = streaming_container.chat_message("assistant")
+                    streaming_text = streaming_msg.empty()
+                streaming_text.markdown("".join(chunks))
+            full_response = "".join(chunks)
 
             st.session_state.http_call_in_progress = False
 
