@@ -380,11 +380,9 @@ def check_auth():
             st.error("Invalid username or password")
 
 
-# --- LOGIN TEMPORARILY DISABLED FOR DEVELOPMENT ---
-# if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
-#     check_auth()
-#     st.stop()
-st.session_state["authenticated"] = True
+if "authenticated" not in st.session_state or not st.session_state["authenticated"]:
+    check_auth()
+    st.stop()
 
 if st.session_state.get("clear_chat_input", False):
     st.session_state["chat_input_text"] = ""
